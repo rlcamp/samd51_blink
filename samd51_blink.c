@@ -23,8 +23,8 @@ void timer4_init(void) {
     /* make sure the APB is enabled for TC4 */
     MCLK->APBCMASK.reg |= MCLK_APBCMASK_TC4;
     
-    /* use the 48 MHz clock peripheral as the source for TC4 */
-    GCLK->PCHCTRL[TC4_GCLK_ID].reg = GCLK_PCHCTRL_GEN_GCLK1_Val | (1U << GCLK_PCHCTRL_CHEN_Pos);
+    /* use the 32 kHz clock peripheral as the source for TC4 */
+    GCLK->PCHCTRL[TC4_GCLK_ID].reg = GCLK_PCHCTRL_GEN_GCLK3_Val | (1U << GCLK_PCHCTRL_CHEN_Pos);
     while (GCLK->SYNCBUSY.reg);
     
     /* reset the TC4 peripheral */
@@ -34,12 +34,12 @@ void timer4_init(void) {
     /* put it in 16 bit mode */
     TC4->COUNT16.CTRLA.bit.MODE = TC_CTRLA_MODE_COUNT16_Val;
     
-    /* timer ticks will be 48 MHz clock ticks divided by this prescaler value */
-    TC4->COUNT16.CTRLA.bit.PRESCALER = TC_CTRLA_PRESCALER_DIV1024_Val;
+    /* timer ticks will be 32 kHz clock ticks divided by this prescaler value */
+    TC4->COUNT16.CTRLA.bit.PRESCALER = TC_CTRLA_PRESCALER_DIV1_Val;
     
     /* counter resets after the value in cc[0], i.e. its period is that number plus one */
     TC4->COUNT16.WAVE.reg = TC_WAVE_WAVEGEN_MFRQ;
-    TC4->COUNT16.CC[0].reg = 23437;
+    TC4->COUNT16.CC[0].reg = 16383;
     
     /* fire an interrupt whenever counter equals that value */
     TC4->COUNT16.INTENSET.reg = 0;
