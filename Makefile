@@ -3,7 +3,7 @@ ifndef USE_ARDUINO
     CC=$(shell find ${HOME} -maxdepth 2 -type d -name 'arm-gnu-toolchain*' 2>/dev/null | sort | tail -n1)/bin/arm-none-eabi-gcc
     OBJCOPY=$(shell find ${HOME} -maxdepth 2 -type d -name 'arm-gnu-toolchain*' 2>/dev/null | sort | tail -n1)/bin/arm-none-eabi-objcopy
     PATH_CMSIS=$(shell find ${HOME} -maxdepth 2 -type d -name 'CMSIS_5' 2>/dev/null)/CMSIS/
-    PATH_ATMEL=$(shell find $(shell find ${HOME} -maxdepth 2 -type d -name 'Atmel.SAMD51_DFP.*' 2>/dev/null) -mindepth 2 -maxdepth 2 -name include)
+    PATH_ATMEL=$(shell find ${HOME} -maxdepth 2 -type d -name 'Atmel.SAMD51_DFP.*' 2>/dev/null)/samd51a/include
 # this is the only thing explicitly needed from adafruit, and only so we don't accidentally overwrite the uf2 bootloader
     PATH_LINKER_SCRIPT=flash_with_bootloader.ld
 else
