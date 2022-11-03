@@ -29,6 +29,7 @@ TARGETS=samd51_blink.bin
 
 all : ${TARGETS}
 
+# implicit rule requires this to have no extension, but it is logically an .elf file
 samd51_blink : samd51_blink.o samd51_init.o
 
 samd51_blink.bin : samd51_blink
