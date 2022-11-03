@@ -1,17 +1,17 @@
 ifndef USE_ARDUINO
 # to use this, download generic arm-none-eabi-gcc, cmsis, cmsis-atmel, download and compile bossac
-    CC=${HOME}/Downloads/arm-gnu-toolchain-11.3.rel1-darwin-x86_64-arm-none-eabi/bin/arm-none-eabi-gcc
-    OBJCOPY=${HOME}/Downloads/arm-gnu-toolchain-11.3.rel1-darwin-x86_64-arm-none-eabi/bin/arm-none-eabi-objcopy
+    CC=$(shell find ${HOME}/Downloads/arm-gnu-toolchain-*-arm-none-eabi/bin/ -type f -name arm-none-eabi-gcc)
+    OBJCOPY=$(shell find ${HOME}/Downloads/arm-gnu-toolchain-*-arm-none-eabi/bin/ -type f -name arm-none-eabi-objcopy)
     PATH_CMSIS=${HOME}/Downloads/CMSIS_5/CMSIS/
-    PATH_ATMEL=${HOME}/Downloads/Atmel.SAMD51_DFP.1.2.139/samd51a/include/
+    PATH_ATMEL=$(shell find ${HOME}/Downloads/Atmel.SAMD51_DFP.* -name include -mindepth 2 -maxdepth 2)
 # this is the only thing explicitly needed from adafruit, and only so we don't accidentally overwrite the uf2 bootloader
     PATH_LINKER_SCRIPT=flash_with_bootloader.ld
 else
-    CC=${HOME}/Library/Arduino15/packages/adafruit/tools/arm-none-eabi-gcc/9-2019q4/bin/arm-none-eabi-gcc
-    OBJCOPY=${HOME}/Library/Arduino15/packages/adafruit/tools/arm-none-eabi-gcc/9-2019q4/bin/arm-none-eabi-objcopy
-    PATH_CMSIS=${HOME}/Library/Arduino15/packages/adafruit/tools/CMSIS/5.4.0/CMSIS/
-    PATH_ATMEL=${HOME}/Library/Arduino15/packages/adafruit/tools/CMSIS-Atmel/1.2.2/CMSIS/Device/ATMEL/samd51/include/
-    PATH_LINKER_SCRIPT=${HOME}/Library/Arduino15/packages/adafruit/hardware/samd/1.7.10/variants/feather_m4/linker_scripts/gcc/flash_with_bootloader.ld
+    CC=$(shell find ${HOME}/Library/Arduino15/packages/adafruit/tools/arm-none-eabi-gcc/ -type f -name arm-none-eabi-gcc)
+    OBJCOPY=$(shell find ${HOME}/Library/Arduino15/packages/adafruit/tools/arm-none-eabi-gcc/ -type f -name arm-none-eabi-objcopy)
+    PATH_CMSIS=$(shell find ${HOME}/Library/Arduino15/packages/adafruit/tools/CMSIS/ -type d -mindepth 2 -maxdepth 2 -name 'CMSIS')
+    PATH_ATMEL=$(shell find ${HOME}/Library/Arduino15/packages/adafruit/tools/CMSIS-Atmel/ -name include -mindepth 6 -maxdepth 6 | grep samd51)
+    PATH_LINKER_SCRIPT=$(shell find ${HOME}/Library/Arduino15/packages/adafruit/hardware/samd/ | grep 'variants/feather_m4/linker_scripts/gcc/flash_with_bootloader.ld')
 endif
 
 OPTFLAGS=-Os
