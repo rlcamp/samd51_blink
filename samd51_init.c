@@ -369,16 +369,12 @@ void Reset_Handler(void) {
 
 /* everything below is derived from adafruit's startup.c. TODO: lots of cargo cult */
 
-#define GENERIC_CLOCK_GENERATOR_MAIN      (0u)
-#define GENERIC_CLOCK_GENERATOR_XOSC32K   (3u)
-#define GENERIC_CLOCK_GENERATOR_48M      (1u)
-#define GENERIC_CLOCK_GENERATOR_100M    (2u)
-#define GENERIC_CLOCK_GENERATOR_12M       (4u)
-#define GENERIC_CLOCK_GENERATOR_1M      (5u)
-#define GENERIC_CLOCK_GENERATOR_OSC32K    (1u)
-#define GENERIC_CLOCK_GENERATOR_OSCULP32K (2u)
-#define GENERIC_CLOCK_GENERATOR_OSC8M     (3u)
-#define GENERIC_CLOCK_MULTIPLEXER_DFLL48M (0u)
+#define GENERIC_CLOCK_GENERATOR_MAIN (0u)
+#define GENERIC_CLOCK_GENERATOR_48M (1u)
+#define GENERIC_CLOCK_GENERATOR_100M (2u)
+#define GENERIC_CLOCK_GENERATOR_XOSC32K (3u)
+#define GENERIC_CLOCK_GENERATOR_12M (4u)
+#define GENERIC_CLOCK_GENERATOR_1M (5u)
 
 void SystemInit(void) {
     /* zero wait states */
@@ -394,7 +390,7 @@ void SystemInit(void) {
     GCLK->CTRLA.bit.SWRST = 1;
     while (GCLK->SYNCBUSY.reg & GCLK_SYNCBUSY_SWRST);
     
-    /* one or the other of the 32 kHz oscilaltors will be generic clock generator 3 */
+    /* one or the other of the 32 kHz oscillators will be generic clock generator 3 */
 #ifndef CRYSTALLESS
     GCLK->GENCTRL[GENERIC_CLOCK_GENERATOR_XOSC32K].reg = GCLK_GENCTRL_SRC(GCLK_GENCTRL_SRC_XOSC32K) | GCLK_GENCTRL_GENEN;
 #else
@@ -442,25 +438,29 @@ void SystemInit(void) {
     
     OSCCTRL->Dpll[0].DPLLCTRLA.reg = OSCCTRL_DPLLCTRLA_ENABLE;
     while( OSCCTRL->Dpll[0].DPLLSTATUS.bit.CLKRDY == 0 || OSCCTRL->Dpll[0].DPLLSTATUS.bit.LOCK == 0);
-    
+
+#if 1
     /* set up fdpll1 at 100 MHz */
     GCLK->PCHCTRL[OSCCTRL_GCLK_ID_FDPLL1].reg = (1 << GCLK_PCHCTRL_CHEN_Pos) | GCLK_PCHCTRL_GEN(GCLK_PCHCTRL_GEN_GCLK5_Val);
     OSCCTRL->Dpll[1].DPLLRATIO.reg = OSCCTRL_DPLLRATIO_LDRFRAC(0x00) | OSCCTRL_DPLLRATIO_LDR(99);
     while(OSCCTRL->Dpll[1].DPLLSYNCBUSY.bit.DPLLRATIO);
-    
+
     //MUST USE LBYPASS DUE TO BUG IN REV A OF SAMD51
     OSCCTRL->Dpll[1].DPLLCTRLB.reg = OSCCTRL_DPLLCTRLB_REFCLK_GCLK | OSCCTRL_DPLLCTRLB_LBYPASS;
     OSCCTRL->Dpll[1].DPLLCTRLA.reg = OSCCTRL_DPLLCTRLA_ENABLE;
     while( OSCCTRL->Dpll[1].DPLLSTATUS.bit.CLKRDY == 0 || OSCCTRL->Dpll[1].DPLLSTATUS.bit.LOCK == 0);
-    
+#endif
+
     /* 48 MHz clock, required for usb and many other things */
     GCLK->GENCTRL[GENERIC_CLOCK_GENERATOR_48M].reg = GCLK_GENCTRL_SRC(GCLK_GENCTRL_SRC_DFLL_Val) | GCLK_GENCTRL_IDC | GCLK_GENCTRL_GENEN;
     while (GCLK->SYNCBUSY.reg & GCLK_SYNCBUSY_GENCTRL1);
     
-    /* 100 MHz clock required for TODO: what? */
+#if 1
+    /* 100 MHz clock */
     GCLK->GENCTRL[GENERIC_CLOCK_GENERATOR_100M].reg = GCLK_GENCTRL_SRC(GCLK_GENCTRL_SRC_DPLL1_Val) | GCLK_GENCTRL_IDC | GCLK_GENCTRL_GENEN;
     while (GCLK->SYNCBUSY.reg & GCLK_SYNCBUSY_GENCTRL2);
-    
+#endif
+
     /* 12 MHz clock, may not be required for much in practice */
     GCLK->GENCTRL[GENERIC_CLOCK_GENERATOR_12M].reg = GCLK_GENCTRL_SRC(GCLK_GENCTRL_SRC_DFLL_Val) | GCLK_GENCTRL_IDC | GCLK_GENCTRL_DIV(4) | GCLK_GENCTRL_GENEN;
     while (GCLK->SYNCBUSY.reg & GCLK_SYNCBUSY_GENCTRL4);
