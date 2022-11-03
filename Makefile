@@ -10,8 +10,8 @@ else
     CC=$(shell find ${HOME}/Library/Arduino15/packages/adafruit/tools/arm-none-eabi-gcc/ -type f -name arm-none-eabi-gcc | sort | tail -n1)
     OBJCOPY=$(shell find ${HOME}/Library/Arduino15/packages/adafruit/tools/arm-none-eabi-gcc/ -type f -name arm-none-eabi-objcopy | sort | tail -n1)
     PATH_CMSIS=$(shell find ${HOME}/Library/Arduino15/packages/adafruit/tools/CMSIS/ -type d -mindepth 2 -maxdepth 2 -name 'CMSIS')
-    PATH_ATMEL=$(shell find ${HOME}/Library/Arduino15/packages/adafruit/tools/CMSIS-Atmel/ -name include -mindepth 6 -maxdepth 6 | grep samd51)
-    PATH_LINKER_SCRIPT=$(shell find ${HOME}/Library/Arduino15/packages/adafruit/hardware/samd/ | grep 'variants/feather_m4/linker_scripts/gcc/flash_with_bootloader.ld')
+    PATH_ATMEL=$(shell find ${HOME}/Library/Arduino15/packages/adafruit/tools/CMSIS-Atmel/ -name CMSIS -mindepth 2 -maxdepth 2)/Device/ATMEL/samd51/include
+    PATH_LINKER_SCRIPT=$(shell find ${HOME}/Library/Arduino15/packages/adafruit/hardware/samd/ -mindepth 2 -maxdepth 2 -type d -name variants)/feather_m4/linker_scripts/gcc/flash_with_bootloader.ld
 endif
 
 OPTFLAGS=-Os
