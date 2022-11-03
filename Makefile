@@ -1,14 +1,14 @@
 ifndef USE_ARDUINO
 # to use this, download generic arm-none-eabi-gcc, cmsis, cmsis-atmel, download and compile bossac
-    CC=$(shell find ${HOME}/Downloads/arm-gnu-toolchain-*-arm-none-eabi/bin/ -type f -name arm-none-eabi-gcc)
-    OBJCOPY=$(shell find ${HOME}/Downloads/arm-gnu-toolchain-*-arm-none-eabi/bin/ -type f -name arm-none-eabi-objcopy)
+    CC=$(shell find ${HOME}/Downloads/arm-gnu-toolchain-*-arm-none-eabi/bin/ -type f -name arm-none-eabi-gcc | sort | tail -n1)
+    OBJCOPY=$(shell find ${HOME}/Downloads/arm-gnu-toolchain-*-arm-none-eabi/bin/ -type f -name arm-none-eabi-objcopy | sort | tail -n1)
     PATH_CMSIS=${HOME}/Downloads/CMSIS_5/CMSIS/
     PATH_ATMEL=$(shell find ${HOME}/Downloads/Atmel.SAMD51_DFP.* -name include -mindepth 2 -maxdepth 2)
 # this is the only thing explicitly needed from adafruit, and only so we don't accidentally overwrite the uf2 bootloader
     PATH_LINKER_SCRIPT=flash_with_bootloader.ld
 else
-    CC=$(shell find ${HOME}/Library/Arduino15/packages/adafruit/tools/arm-none-eabi-gcc/ -type f -name arm-none-eabi-gcc)
-    OBJCOPY=$(shell find ${HOME}/Library/Arduino15/packages/adafruit/tools/arm-none-eabi-gcc/ -type f -name arm-none-eabi-objcopy)
+    CC=$(shell find ${HOME}/Library/Arduino15/packages/adafruit/tools/arm-none-eabi-gcc/ -type f -name arm-none-eabi-gcc | sort | tail -n1)
+    OBJCOPY=$(shell find ${HOME}/Library/Arduino15/packages/adafruit/tools/arm-none-eabi-gcc/ -type f -name arm-none-eabi-objcopy | sort | tail -n1)
     PATH_CMSIS=$(shell find ${HOME}/Library/Arduino15/packages/adafruit/tools/CMSIS/ -type d -mindepth 2 -maxdepth 2 -name 'CMSIS')
     PATH_ATMEL=$(shell find ${HOME}/Library/Arduino15/packages/adafruit/tools/CMSIS-Atmel/ -name include -mindepth 6 -maxdepth 6 | grep samd51)
     PATH_LINKER_SCRIPT=$(shell find ${HOME}/Library/Arduino15/packages/adafruit/hardware/samd/ | grep 'variants/feather_m4/linker_scripts/gcc/flash_with_bootloader.ld')
