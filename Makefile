@@ -1,9 +1,9 @@
 ifndef USE_ARDUINO
 # to use this, download generic arm-none-eabi-gcc, cmsis, cmsis-atmel, download and compile bossac
-    CC=$(shell find ${HOME}/Downloads/arm-gnu-toolchain-*-arm-none-eabi/bin/ -type f -name arm-none-eabi-gcc | sort | tail -n1)
-    OBJCOPY=$(shell find ${HOME}/Downloads/arm-gnu-toolchain-*-arm-none-eabi/bin/ -type f -name arm-none-eabi-objcopy | sort | tail -n1)
-    PATH_CMSIS=${HOME}/Downloads/CMSIS_5/CMSIS/
-    PATH_ATMEL=$(shell find ${HOME}/Downloads/Atmel.SAMD51_DFP.* -name include -mindepth 2 -maxdepth 2)
+    CC=$(shell find ${HOME} -type d -name 'arm-gnu-toolchain*' -maxdepth 2 2>/dev/null | sort | tail -n1)/bin/arm-none-eabi-gcc
+    OBJCOPY=$(shell find ${HOME} -type d -name 'arm-gnu-toolchain*' -maxdepth 2 2>/dev/null | sort | tail -n1)/bin/arm-none-eabi-objcopy
+    PATH_CMSIS=$(shell find ${HOME} -type d -name 'CMSIS_5' -maxdepth 2 2>/dev/null)/CMSIS/
+    PATH_ATMEL=$(shell find $(shell find ${HOME} -maxdepth 2 -type d -name 'Atmel.SAMD51_DFP.*' 2>/dev/null) -mindepth 2 -maxdepth 2 -name include)
 # this is the only thing explicitly needed from adafruit, and only so we don't accidentally overwrite the uf2 bootloader
     PATH_LINKER_SCRIPT=flash_with_bootloader.ld
 else
