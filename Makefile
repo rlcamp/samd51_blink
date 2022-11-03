@@ -1,8 +1,8 @@
 ifndef USE_ARDUINO
 # to use this, download generic arm-none-eabi-gcc, cmsis, cmsis-atmel, download and compile bossac
-    CC=$(shell find ${HOME} -type d -name 'arm-gnu-toolchain*' -maxdepth 2 2>/dev/null | sort | tail -n1)/bin/arm-none-eabi-gcc
-    OBJCOPY=$(shell find ${HOME} -type d -name 'arm-gnu-toolchain*' -maxdepth 2 2>/dev/null | sort | tail -n1)/bin/arm-none-eabi-objcopy
-    PATH_CMSIS=$(shell find ${HOME} -type d -name 'CMSIS_5' -maxdepth 2 2>/dev/null)/CMSIS/
+    CC=$(shell find ${HOME} -maxdepth 2 -type d -name 'arm-gnu-toolchain*' 2>/dev/null | sort | tail -n1)/bin/arm-none-eabi-gcc
+    OBJCOPY=$(shell find ${HOME} -maxdepth 2 -type d -name 'arm-gnu-toolchain*' 2>/dev/null | sort | tail -n1)/bin/arm-none-eabi-objcopy
+    PATH_CMSIS=$(shell find ${HOME} -maxdepth 2 -type d -name 'CMSIS_5' 2>/dev/null)/CMSIS/
     PATH_ATMEL=$(shell find $(shell find ${HOME} -maxdepth 2 -type d -name 'Atmel.SAMD51_DFP.*' 2>/dev/null) -mindepth 2 -maxdepth 2 -name include)
 # this is the only thing explicitly needed from adafruit, and only so we don't accidentally overwrite the uf2 bootloader
     PATH_LINKER_SCRIPT=flash_with_bootloader.ld
@@ -37,6 +37,6 @@ samd51_blink.bin : samd51_blink
 
 .PHONY: clean
 clean :
-	$(RM) *.o $(shell find . -type f -maxdepth 1 ! -name "*.*" | grep -v Makefile) ${TARGETS}
+	$(RM) *.o $(shell find . -maxdepth 1 -type f ! -name "*.*" | grep -v Makefile) ${TARGETS}
 
 *.o : Makefile
