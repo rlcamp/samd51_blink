@@ -6,6 +6,8 @@
  - within a sketch in the arduino ide using the adafruit samd core
  */
 
+#ifdef __SAMD51__
+
 #ifdef NON_ANCIENT_HEADER_PATHS
 /* newer cmsis-atmel from upstream */
 #include <samd51j19a.h>
@@ -508,3 +510,7 @@ void SystemInit(void) {
 }
 
 __attribute((weak)) void _init(void) { }
+
+#else
+#warning lol todo
+#endif
