@@ -361,7 +361,7 @@ void Reset_Handler(void) {
     
     /* deviation from upstream cmsis: we start all the clocks before any C or C++ constructors are run */
     SystemInit();
-        
+
     /* deviation from adafruit/arduino samd core: we run the constructors before main(), rather than doing both clock init and constructors in main() */
     __libc_init_array();
     
@@ -410,7 +410,7 @@ void SystemInit(void) {
     OSCCTRL->DFLLCTRLA.reg = 0;
     //GCLK->PCHCTRL[OSCCTRL_GCLK_ID_DFLL48].reg = (1 << GCLK_PCHCTRL_CHEN_Pos) | GCLK_PCHCTRL_GEN(GCLK_PCHCTRL_GEN_GCLK3_Val);
     
-    OSCCTRL->DFLLMUL.reg = OSCCTRL_DFLLMUL_CSTEP( 0x1 ) | OSCCTRL_DFLLMUL_FSTEP( 0x1 ) | OSCCTRL_DFLLMUL_MUL( 0);
+    OSCCTRL->DFLLMUL.reg = OSCCTRL_DFLLMUL_CSTEP(0x1) | OSCCTRL_DFLLMUL_FSTEP(0x1) | OSCCTRL_DFLLMUL_MUL(0);
     while (OSCCTRL->DFLLSYNC.reg & OSCCTRL_DFLLSYNC_DFLLMUL);
     
     OSCCTRL->DFLLCTRLB.reg = 0;
@@ -418,62 +418,69 @@ void SystemInit(void) {
     
     OSCCTRL->DFLLCTRLA.reg |= OSCCTRL_DFLLCTRLA_ENABLE;
     while (OSCCTRL->DFLLSYNC.reg & OSCCTRL_DFLLSYNC_ENABLE);
-    
+
+    /* chip errata 2.8.3 workaround says to set dfllmul, then clear ctrlb to select open loop, then
+     enable the dfll, then do this weird dfllval reload thing, then set dfllctrlb to final value */
     OSCCTRL->DFLLVAL.reg = OSCCTRL->DFLLVAL.reg;
     while( OSCCTRL->DFLLSYNC.bit.DFLLVAL);
     
-    OSCCTRL->DFLLCTRLB.reg = OSCCTRL_DFLLCTRLB_WAITLOCK | OSCCTRL_DFLLCTRLB_CCDIS | OSCCTRL_DFLLCTRLB_USBCRM ;
+    OSCCTRL->DFLLCTRLB.reg = OSCCTRL_DFLLCTRLB_WAITLOCK | OSCCTRL_DFLLCTRLB_CCDIS | OSCCTRL_DFLLCTRLB_USBCRM;
     while (!OSCCTRL->STATUS.bit.DFLLRDY);
-    
-    /* divide by 48 to get a 1 MHz clock for generic clock generator 5 */
-    GCLK->GENCTRL[GENERIC_CLOCK_GENERATOR_1M].reg = GCLK_GENCTRL_SRC(GCLK_GENCTRL_SRC_DFLL_Val) | GCLK_GENCTRL_GENEN | GCLK_GENCTRL_DIV(48u);
-    while (GCLK->SYNCBUSY.bit.GENCTRL5);
-    
-    /* set up fdpll0 at F_CPU (120 MHz) */
-    GCLK->PCHCTRL[OSCCTRL_GCLK_ID_FDPLL0].reg = (1 << GCLK_PCHCTRL_CHEN_Pos) | GCLK_PCHCTRL_GEN(GCLK_PCHCTRL_GEN_GCLK5_Val);
-    
-    OSCCTRL->Dpll[0].DPLLRATIO.reg = OSCCTRL_DPLLRATIO_LDRFRAC(0x00) | OSCCTRL_DPLLRATIO_LDR((F_CPU - 500000) / 1000000);
-    while(OSCCTRL->Dpll[0].DPLLSYNCBUSY.bit.DPLLRATIO);
-    
-    //MUST USE LBYPASS DUE TO BUG IN REV A OF SAMD51
-    OSCCTRL->Dpll[0].DPLLCTRLB.reg = OSCCTRL_DPLLCTRLB_REFCLK_GCLK | OSCCTRL_DPLLCTRLB_LBYPASS;
-    
-    OSCCTRL->Dpll[0].DPLLCTRLA.reg = OSCCTRL_DPLLCTRLA_ENABLE;
-    while( OSCCTRL->Dpll[0].DPLLSTATUS.bit.CLKRDY == 0 || OSCCTRL->Dpll[0].DPLLSTATUS.bit.LOCK == 0);
 
-#if 1
-    /* set up fdpll1 at 100 MHz */
-    GCLK->PCHCTRL[OSCCTRL_GCLK_ID_FDPLL1].reg = (1 << GCLK_PCHCTRL_CHEN_Pos) | GCLK_PCHCTRL_GEN(GCLK_PCHCTRL_GEN_GCLK5_Val);
-    OSCCTRL->Dpll[1].DPLLRATIO.reg = OSCCTRL_DPLLRATIO_LDRFRAC(0x00) | OSCCTRL_DPLLRATIO_LDR(99);
-    while(OSCCTRL->Dpll[1].DPLLSYNCBUSY.bit.DPLLRATIO);
+    if (F_CPU != 48000000) {
+        /* divide by 48 to get a 1 MHz clock for generic clock generator 5 */
+        GCLK->GENCTRL[GENERIC_CLOCK_GENERATOR_1M].reg = GCLK_GENCTRL_SRC(GCLK_GENCTRL_SRC_DFLL_Val) | GCLK_GENCTRL_GENEN | GCLK_GENCTRL_DIV(48u);
+        while (GCLK->SYNCBUSY.bit.GENCTRL5);
 
-    //MUST USE LBYPASS DUE TO BUG IN REV A OF SAMD51
-    OSCCTRL->Dpll[1].DPLLCTRLB.reg = OSCCTRL_DPLLCTRLB_REFCLK_GCLK | OSCCTRL_DPLLCTRLB_LBYPASS;
-    OSCCTRL->Dpll[1].DPLLCTRLA.reg = OSCCTRL_DPLLCTRLA_ENABLE;
-    while( OSCCTRL->Dpll[1].DPLLSTATUS.bit.CLKRDY == 0 || OSCCTRL->Dpll[1].DPLLSTATUS.bit.LOCK == 0);
-#endif
+        /* set up fdpll0 at F_CPU (120 MHz) */
+        GCLK->PCHCTRL[OSCCTRL_GCLK_ID_FDPLL0].reg = (1 << GCLK_PCHCTRL_CHEN_Pos) | GCLK_PCHCTRL_GEN(GCLK_PCHCTRL_GEN_GCLK5_Val);
 
-    /* 48 MHz clock, required for usb and many other things */
-    GCLK->GENCTRL[GENERIC_CLOCK_GENERATOR_48M].reg = GCLK_GENCTRL_SRC(GCLK_GENCTRL_SRC_DFLL_Val) | GCLK_GENCTRL_IDC | GCLK_GENCTRL_GENEN;
-    while (GCLK->SYNCBUSY.reg & GCLK_SYNCBUSY_GENCTRL1);
-    
-#if 1
-    /* 100 MHz clock */
-    GCLK->GENCTRL[GENERIC_CLOCK_GENERATOR_100M].reg = GCLK_GENCTRL_SRC(GCLK_GENCTRL_SRC_DPLL1_Val) | GCLK_GENCTRL_IDC | GCLK_GENCTRL_GENEN;
-    while (GCLK->SYNCBUSY.reg & GCLK_SYNCBUSY_GENCTRL2);
-#endif
+        OSCCTRL->Dpll[0].DPLLRATIO.reg = OSCCTRL_DPLLRATIO_LDRFRAC(0x00) | OSCCTRL_DPLLRATIO_LDR((F_CPU - 500000) / 1000000);
+        while(OSCCTRL->Dpll[0].DPLLSYNCBUSY.bit.DPLLRATIO);
 
-    /* 12 MHz clock, may not be required for much in practice */
-    GCLK->GENCTRL[GENERIC_CLOCK_GENERATOR_12M].reg = GCLK_GENCTRL_SRC(GCLK_GENCTRL_SRC_DFLL_Val) | GCLK_GENCTRL_IDC | GCLK_GENCTRL_DIV(4) | GCLK_GENCTRL_GENEN;
-    while (GCLK->SYNCBUSY.reg & GCLK_SYNCBUSY_GENCTRL4);
-    
-    /* use the 120 MHz clock for the cpu */
-    GCLK->GENCTRL[GENERIC_CLOCK_GENERATOR_MAIN].reg = GCLK_GENCTRL_SRC(GCLK_GENCTRL_SRC_DPLL0) | GCLK_GENCTRL_IDC | GCLK_GENCTRL_GENEN;
-    while (GCLK->SYNCBUSY.reg & GCLK_SYNCBUSY_GENCTRL0);
-    
+        //MUST USE LBYPASS DUE TO BUG IN REV A OF SAMD51
+        OSCCTRL->Dpll[0].DPLLCTRLB.reg = OSCCTRL_DPLLCTRLB_REFCLK_GCLK | OSCCTRL_DPLLCTRLB_LBYPASS;
+
+        OSCCTRL->Dpll[0].DPLLCTRLA.reg = OSCCTRL_DPLLCTRLA_ENABLE;
+        while( OSCCTRL->Dpll[0].DPLLSTATUS.bit.CLKRDY == 0 || OSCCTRL->Dpll[0].DPLLSTATUS.bit.LOCK == 0);
+
+        /* 48 MHz clock, required for usb and many other things */
+        GCLK->GENCTRL[GENERIC_CLOCK_GENERATOR_48M].reg = GCLK_GENCTRL_SRC(GCLK_GENCTRL_SRC_DFLL_Val) | GCLK_GENCTRL_IDC | GCLK_GENCTRL_GENEN;
+        while (GCLK->SYNCBUSY.reg & GCLK_SYNCBUSY_GENCTRL1);
+
+        /* use the 120 MHz clock for the cpu */
+        GCLK->GENCTRL[GENERIC_CLOCK_GENERATOR_MAIN].reg = GCLK_GENCTRL_SRC(GCLK_GENCTRL_SRC_DPLL0) | GCLK_GENCTRL_IDC | GCLK_GENCTRL_GENEN;
+        while (GCLK->SYNCBUSY.reg & GCLK_SYNCBUSY_GENCTRL0);
+    } else {
+        GCLK->GENCTRL[GENERIC_CLOCK_GENERATOR_MAIN].reg = GCLK_GENCTRL_SRC(GCLK_GENCTRL_SRC_DFLL) | GCLK_GENCTRL_IDC | GCLK_GENCTRL_GENEN;
+        while (GCLK->SYNCBUSY.reg & GCLK_SYNCBUSY_GENCTRL0);
+    }
+
     /* with no divider */
     MCLK->CPUDIV.reg = MCLK_CPUDIV_DIV_DIV1;
-    
+
+    if ((0)) {
+        /* set up fdpll1 at 100 MHz */
+        GCLK->PCHCTRL[OSCCTRL_GCLK_ID_FDPLL1].reg = (1 << GCLK_PCHCTRL_CHEN_Pos) | GCLK_PCHCTRL_GEN(GCLK_PCHCTRL_GEN_GCLK5_Val);
+        OSCCTRL->Dpll[1].DPLLRATIO.reg = OSCCTRL_DPLLRATIO_LDRFRAC(0x00) | OSCCTRL_DPLLRATIO_LDR(99);
+        while(OSCCTRL->Dpll[1].DPLLSYNCBUSY.bit.DPLLRATIO);
+
+        //MUST USE LBYPASS DUE TO BUG IN REV A OF SAMD51
+        OSCCTRL->Dpll[1].DPLLCTRLB.reg = OSCCTRL_DPLLCTRLB_REFCLK_GCLK | OSCCTRL_DPLLCTRLB_LBYPASS;
+        OSCCTRL->Dpll[1].DPLLCTRLA.reg = OSCCTRL_DPLLCTRLA_ENABLE;
+        while( OSCCTRL->Dpll[1].DPLLSTATUS.bit.CLKRDY == 0 || OSCCTRL->Dpll[1].DPLLSTATUS.bit.LOCK == 0);
+
+        /* 100 MHz clock */
+        GCLK->GENCTRL[GENERIC_CLOCK_GENERATOR_100M].reg = GCLK_GENCTRL_SRC(GCLK_GENCTRL_SRC_DPLL1_Val) | GCLK_GENCTRL_IDC | GCLK_GENCTRL_GENEN;
+        while (GCLK->SYNCBUSY.reg & GCLK_SYNCBUSY_GENCTRL2);
+    }
+
+    if ((0)) {
+        /* 12 MHz clock, may not be required for much in practice */
+        GCLK->GENCTRL[GENERIC_CLOCK_GENERATOR_12M].reg = GCLK_GENCTRL_SRC(GCLK_GENCTRL_SRC_DFLL_Val) | GCLK_GENCTRL_IDC | GCLK_GENCTRL_DIV(4) | GCLK_GENCTRL_GENEN;
+        while (GCLK->SYNCBUSY.reg & GCLK_SYNCBUSY_GENCTRL4);
+    }
+
     /* use ldo regulator */
     SUPC->VREG.bit.SEL = 0;
     
@@ -481,11 +488,17 @@ void SystemInit(void) {
     __disable_irq();
     CMCC->CTRL.reg = 1;
     __enable_irq();
-    
-    /* set up dwt unit for debugging */
-    CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
-    DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
-    
+
+    /* shut off 32 kHz oscillators we're not using */
+    OSC32KCTRL->XOSC32K.reg = 0;
+    OSC32KCTRL->OSCULP32K.reg = 0;
+
+    if ((0)) {
+        /* set up dwt unit for debugging */
+        CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
+        DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
+    }
+
     /* load adc calibration bias stuff */
     uint32_t bias0 = (*((uint32_t *)AC_FUSES_BIAS0_ADDR) & AC_FUSES_BIAS0_Msk) >> AC_FUSES_BIAS0_Pos;
     AC->CALIB.reg = AC_CALIB_BIAS0(bias0);
