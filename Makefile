@@ -14,16 +14,22 @@ else
     PATH_LINKER_SCRIPT=$(shell find ${HOME}/Library/Arduino15/packages/adafruit/hardware/samd/ -mindepth 2 -maxdepth 2 -type d -name variants)/feather_m4/linker_scripts/gcc/flash_with_bootloader.ld
 endif
 
-OPTFLAGS=-Os
+CFLAGS?=-O2
 
-TARGET_ARCH=-mcpu=cortex-m4 -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16
-CPPFLAGS=-D__SKETCH_NAME__=blink -DF_CPU=120000000L -DNON_ANCIENT_HEADER_PATHS -DARDUINO_FEATHER_M4 -DARDUINO_ARCH_SAMD -DARDUINO_SAMD_ADAFRUIT -D__SAMD51J19A__ -DADAFRUIT_FEATHER_M4_EXPRESS -D__SAMD51__ -DUSB_VID=0x239A -DUSB_PID=0x8022 -DUSBCON -DUSB_CONFIG_POWER=100 -DUSB_MANUFACTURER=Adafruit -DUSB_PRODUCT=Feather -D__FPU_PRESENT -DARM_MATH_CM4 -DENABLE_CACHE -DVARIANT_QSPI_BAUD_DEFAULT=50000000
+TARGET_ARCH?=-mcpu=cortex-m4 -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16
 
-CFLAGS=${OPTFLAGS} -Wall -Wextra -Wshadow -std=gnu11 -ffunction-sections -fdata-sections --param max-inline-insns-single=500 -I${PATH_CMSIS}/Core/Include/ -I${PATH_ATMEL} -I${PATH_ATMEL}/samd51/include/
+CPPFLAGS?=-Wall -Wextra -Wshadow
+
+# specifying CPPFLAGS at the command line does not affect whether these are appended
+override CPPFLAGS+=-D__SKETCH_NAME__=blink -DF_CPU=120000000L -DNON_ANCIENT_HEADER_PATHS -DARDUINO_FEATHER_M4 -DARDUINO_ARCH_SAMD -DARDUINO_SAMD_ADAFRUIT -D__SAMD51J19A__ -DADAFRUIT_FEATHER_M4_EXPRESS -D__SAMD51__ -DUSB_VID=0x239A -DUSB_PID=0x8022 -DUSBCON -DUSB_CONFIG_POWER=100 -D__FPU_PRESENT -DARM_MATH_CM4 -DENABLE_CACHE -DVARIANT_QSPI_BAUD_DEFAULT=50000000 -DUSB_MANUFACTURER=Adafruit -DUSB_PRODUCT=Feather -DARM_MATH_CM4 -I${PATH_CMSIS}/Core/Include/ -I${PATH_ATMEL} -I${PATH_ATMEL}/samd51/include/
 
 LDLIBS=-nostdlib -lm -lgcc -lc_nano -lnosys
 
-LDFLAGS=${OPTFLAGS} -Wl,--gc-sections -T${PATH_LINKER_SCRIPT} -Wl,--check-sections -Wl,--unresolved-symbols=report-all -Wl,--warn-common -Wl,--warn-section-align
+# using := here ensures that the value of CFLAGS is prepended to LDFLAGS BEFORE the additional things below are appended to CFLAGS
+LDFLAGS:=${CFLAGS} -Wl,--gc-sections -T${PATH_LINKER_SCRIPT} -Wl,--check-sections -Wl,--unresolved-symbols=report-all -Wl,--warn-common
+
+# specifying CFLAGS at the command line does not affect whether these are appended
+override CFLAGS+=-ffunction-sections -fdata-sections --param max-inline-insns-single=500
 
 TARGETS=samd51_blink.bin
 
