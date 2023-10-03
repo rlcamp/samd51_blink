@@ -374,10 +374,11 @@ void Reset_Handler(void) {
 
 #define GENERIC_CLOCK_GENERATOR_MAIN (0u)
 #define GENERIC_CLOCK_GENERATOR_48M (1u)
-#define GENERIC_CLOCK_GENERATOR_100M (2u)
 #define GENERIC_CLOCK_GENERATOR_XOSC32K (3u)
-#define GENERIC_CLOCK_GENERATOR_12M (4u)
 #define GENERIC_CLOCK_GENERATOR_1M (5u)
+/* deviation from adafruit/arduino: note that the adafruit core uses GCLKs 2 and 4 for 100
+ and 1 MHz respectively, we don't, but we should probably not reuse those two GCLKs for
+ other clock frequencies */
 
 void SystemInit(void) {
     /* zero wait states */
@@ -460,28 +461,6 @@ void SystemInit(void) {
     /* with no divider */
     MCLK->CPUDIV.reg = MCLK_CPUDIV_DIV_DIV1;
 
-    if ((0)) {
-        /* set up fdpll1 at 100 MHz */
-        GCLK->PCHCTRL[OSCCTRL_GCLK_ID_FDPLL1].reg = (1 << GCLK_PCHCTRL_CHEN_Pos) | GCLK_PCHCTRL_GEN(GCLK_PCHCTRL_GEN_GCLK5_Val);
-        OSCCTRL->Dpll[1].DPLLRATIO.reg = OSCCTRL_DPLLRATIO_LDRFRAC(0x00) | OSCCTRL_DPLLRATIO_LDR(99);
-        while(OSCCTRL->Dpll[1].DPLLSYNCBUSY.bit.DPLLRATIO);
-
-        //MUST USE LBYPASS DUE TO BUG IN REV A OF SAMD51
-        OSCCTRL->Dpll[1].DPLLCTRLB.reg = OSCCTRL_DPLLCTRLB_REFCLK_GCLK | OSCCTRL_DPLLCTRLB_LBYPASS;
-        OSCCTRL->Dpll[1].DPLLCTRLA.reg = OSCCTRL_DPLLCTRLA_ENABLE;
-        while( OSCCTRL->Dpll[1].DPLLSTATUS.bit.CLKRDY == 0 || OSCCTRL->Dpll[1].DPLLSTATUS.bit.LOCK == 0);
-
-        /* 100 MHz clock */
-        GCLK->GENCTRL[GENERIC_CLOCK_GENERATOR_100M].reg = GCLK_GENCTRL_SRC(GCLK_GENCTRL_SRC_DPLL1_Val) | GCLK_GENCTRL_IDC | GCLK_GENCTRL_GENEN;
-        while (GCLK->SYNCBUSY.reg & GCLK_SYNCBUSY_GENCTRL2);
-    }
-
-    if ((0)) {
-        /* 12 MHz clock, may not be required for much in practice */
-        GCLK->GENCTRL[GENERIC_CLOCK_GENERATOR_12M].reg = GCLK_GENCTRL_SRC(GCLK_GENCTRL_SRC_DFLL_Val) | GCLK_GENCTRL_IDC | GCLK_GENCTRL_DIV(4) | GCLK_GENCTRL_GENEN;
-        while (GCLK->SYNCBUSY.reg & GCLK_SYNCBUSY_GENCTRL4);
-    }
-
     /* use ldo regulator */
     SUPC->VREG.bit.SEL = 0;
     
@@ -494,11 +473,7 @@ void SystemInit(void) {
 //    OSC32KCTRL->XOSC32K.reg = 0;
     OSC32KCTRL->OSCULP32K.reg = 0;
 
-    if ((0)) {
-        /* set up dwt unit for debugging */
-        CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
-        DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
-    }
+    /* deviation from adafruit/arduino: removed debugging stuff */
 
     /* load adc calibration bias stuff */
     uint32_t bias0 = (*((uint32_t *)AC_FUSES_BIAS0_ADDR) & AC_FUSES_BIAS0_Msk) >> AC_FUSES_BIAS0_Pos;
