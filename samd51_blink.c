@@ -43,21 +43,17 @@ void timer_init(void) {
     TC3->COUNT16.CTRLA.bit.SWRST = 1;
     while (TC3->COUNT16.SYNCBUSY.bit.SWRST);
     
-    /* put it in 16 bit mode */
-    TC3->COUNT16.CTRLA.bit.MODE = TC_CTRLA_MODE_COUNT16_Val;
-    
-    /* timer ticks will be 32 kHz clock ticks divided by this prescaler value */
-    TC3->COUNT16.CTRLA.bit.PRESCALER = TC_CTRLA_PRESCALER_DIV1_Val;
-    
-    /* run in standby */
-    TC3->COUNT16.CTRLA.bit.RUNSTDBY = 1;
+    TC3->COUNT16.CTRLA.reg = (TC_CTRLA_Type) { .bit = {
+        .MODE = TC_CTRLA_MODE_COUNT16_Val, /* use 16 bit counter mode */
+        .PRESCALER = TC_CTRLA_PRESCALER_DIV1_Val, /* no prescaler */
+        .RUNSTDBY = 1 /* run in stdby */
+    }}.reg;
 
     /* counter resets after the value in cc[0], i.e. its period is that number plus one */
     TC3->COUNT16.WAVE.reg = TC_WAVE_WAVEGEN_MFRQ;
     TC3->COUNT16.CC[0].reg = 16383;
     
     /* fire an interrupt whenever counter equals that value */
-    TC3->COUNT16.INTENSET.reg = 0;
     TC3->COUNT16.INTENSET.bit.MC0 = 1;
     NVIC_EnableIRQ(TC3_IRQn);
     
