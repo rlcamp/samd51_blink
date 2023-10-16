@@ -1,5 +1,5 @@
 /* derived from adafruit samd core, in turn derived from cmsis. significant deviations should be noted
- 
+
  ideally, this file should be able to be used in the following scenarios:
  - with a standalone build script using upstream cmsis/atmel/gcc/bossac
  - with the same build script using older cmsis/atmel/gcc/bossac as packaged by adafruit
@@ -182,7 +182,7 @@ __attribute__((used))
 __attribute__((section(".isr_vector"))) const DeviceVectors exception_table = {
     /* Configure Initial Stack Pointer, using linker-generated symbols */
     (void *)(&__StackTop),
-    
+
     /* Cortex-M handlers */
     (void *)Reset_Handler,
     (void *)NMI_Handler,
@@ -199,7 +199,7 @@ __attribute__((section(".isr_vector"))) const DeviceVectors exception_table = {
     (void *)(0UL), /* Reserved */
     (void *)PendSV_Handler,
     (void *)SysTick_Handler,
-    
+
     /* Peripheral handlers */
     (void *)PM_Handler,                    /*  0 Power Manager */
     (void *)MCLK_Handler,                  /*  1 Main Clock */
@@ -358,13 +358,13 @@ void Reset_Handler(void) {
     SCB->CPACR |= (0xFu << 20);
     __DSB();
     __ISB();
-    
+
     /* deviation from upstream cmsis: we start all the clocks before any C or C++ constructors are run */
     SystemInit();
 
     /* deviation from adafruit/arduino samd core: we run the constructors before main(), rather than doing both clock init and constructors in main() */
     __libc_init_array();
-    
+
     main();
     while (1);
 }
@@ -382,41 +382,41 @@ void Reset_Handler(void) {
 void SystemInit(void) {
     /* zero wait states */
     NVMCTRL->CTRLA.reg |= NVMCTRL_CTRLA_RWS(0);
-    
+
     /* enable 32 kHz xtal oscillator */
 #ifndef CRYSTALLESS
     OSC32KCTRL->XOSC32K.reg = OSC32KCTRL_XOSC32K_ENABLE | OSC32KCTRL_XOSC32K_EN1K | OSC32KCTRL_XOSC32K_EN32K | OSC32KCTRL_XOSC32K_CGM_XT | OSC32KCTRL_XOSC32K_XTALEN;
     while ((OSC32KCTRL->STATUS.reg & OSC32KCTRL_STATUS_XOSC32KRDY) == 0);
 #endif
-    
+
     /* reset gclk peripheral */
     GCLK->CTRLA.bit.SWRST = 1;
     while (GCLK->SYNCBUSY.reg & GCLK_SYNCBUSY_SWRST);
-    
+
     /* one or the other of the 32 kHz oscillators will be generic clock generator 3 */
 #ifndef CRYSTALLESS
     GCLK->GENCTRL[GENERIC_CLOCK_GENERATOR_XOSC32K].reg = GCLK_GENCTRL_SRC(GCLK_GENCTRL_SRC_XOSC32K) | GCLK_GENCTRL_GENEN;
 #else
     GCLK->GENCTRL[GENERIC_CLOCK_GENERATOR_XOSC32K].reg = GCLK_GENCTRL_SRC(GCLK_GENCTRL_SRC_OSCULP32K) | GCLK_GENCTRL_GENEN;
 #endif
-    
+
     while (GCLK->SYNCBUSY.reg & GCLK_SYNCBUSY_GENCTRL3);
-    
+
     /* temporarily use the ulp oscillator for generic clock 0 */
     GCLK->GENCTRL[0].reg = GCLK_GENCTRL_SRC(GCLK_GENCTRL_SRC_OSCULP32K) | GCLK_GENCTRL_GENEN;
     while (GCLK->SYNCBUSY.reg & GCLK_SYNCBUSY_GENCTRL0);
-    
+
     /* bring up dfll in open loop mode */
-    
+
     OSCCTRL->DFLLCTRLA.reg = 0;
     //GCLK->PCHCTRL[OSCCTRL_GCLK_ID_DFLL48].reg = (1 << GCLK_PCHCTRL_CHEN_Pos) | GCLK_PCHCTRL_GEN(GCLK_PCHCTRL_GEN_GCLK3_Val);
-    
+
     OSCCTRL->DFLLMUL.reg = OSCCTRL_DFLLMUL_CSTEP(0x1) | OSCCTRL_DFLLMUL_FSTEP(0x1) | OSCCTRL_DFLLMUL_MUL(0);
     while (OSCCTRL->DFLLSYNC.reg & OSCCTRL_DFLLSYNC_DFLLMUL);
-    
+
     OSCCTRL->DFLLCTRLB.reg = 0;
     while (OSCCTRL->DFLLSYNC.reg & OSCCTRL_DFLLSYNC_DFLLCTRLB);
-    
+
     OSCCTRL->DFLLCTRLA.reg |= OSCCTRL_DFLLCTRLA_ENABLE;
     while (OSCCTRL->DFLLSYNC.reg & OSCCTRL_DFLLSYNC_ENABLE);
 
@@ -463,7 +463,7 @@ void SystemInit(void) {
 
     /* use ldo regulator */
     SUPC->VREG.bit.SEL = 0;
-    
+
     /* enable cache */
     __disable_irq();
     CMCC->CTRL.reg = 1;
@@ -481,19 +481,19 @@ void SystemInit(void) {
     /* load adc calibration bias stuff */
     uint32_t bias0 = (*((uint32_t *)AC_FUSES_BIAS0_ADDR) & AC_FUSES_BIAS0_Msk) >> AC_FUSES_BIAS0_Pos;
     AC->CALIB.reg = AC_CALIB_BIAS0(bias0);
-    
+
     uint32_t biascomp = (*((uint32_t *)ADC0_FUSES_BIASCOMP_ADDR) & ADC0_FUSES_BIASCOMP_Msk) >> ADC0_FUSES_BIASCOMP_Pos;
     uint32_t biasr2r = (*((uint32_t *)ADC0_FUSES_BIASR2R_ADDR) & ADC0_FUSES_BIASR2R_Msk) >> ADC0_FUSES_BIASR2R_Pos;
     uint32_t biasref = (*((uint32_t *)ADC0_FUSES_BIASREFBUF_ADDR) & ADC0_FUSES_BIASREFBUF_Msk) >> ADC0_FUSES_BIASREFBUF_Pos;
-    
+
     ADC0->CALIB.reg = ADC_CALIB_BIASREFBUF(biasref) | ADC_CALIB_BIASR2R(biasr2r) | ADC_CALIB_BIASCOMP(biascomp);
-    
+
     biascomp = (*((uint32_t *)ADC1_FUSES_BIASCOMP_ADDR) & ADC1_FUSES_BIASCOMP_Msk) >> ADC1_FUSES_BIASCOMP_Pos;
     biasr2r = (*((uint32_t *)ADC1_FUSES_BIASR2R_ADDR) & ADC1_FUSES_BIASR2R_Msk) >> ADC1_FUSES_BIASR2R_Pos;
     biasref = (*((uint32_t *)ADC1_FUSES_BIASREFBUF_ADDR) & ADC1_FUSES_BIASREFBUF_Msk) >> ADC1_FUSES_BIASREFBUF_Pos;
-    
+
     ADC1->CALIB.reg = ADC_CALIB_BIASREFBUF(biasref) | ADC_CALIB_BIASR2R(biasr2r) | ADC_CALIB_BIASCOMP(biascomp);
-    
+
     /* load usb calibration stuff */
     uint32_t usbtransn = (*((uint32_t *)USB_FUSES_TRANSN_ADDR) & USB_FUSES_TRANSN_Msk) >> USB_FUSES_TRANSN_Pos;
     uint32_t usbtransp = (*((uint32_t *)USB_FUSES_TRANSP_ADDR) & USB_FUSES_TRANSP_Msk) >> USB_FUSES_TRANSP_Pos;
