@@ -8,9 +8,9 @@
 
 #ifdef __SAMD51__
 
-#ifdef NON_ANCIENT_HEADER_PATHS
+#if __has_include(<samd51.h>)
 /* newer cmsis-atmel from upstream */
-#include <samd51j19a.h>
+#include <samd51.h>
 #else
 /* older cmsis-atmel from adafruit */
 #include <samd.h>
