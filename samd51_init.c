@@ -379,10 +379,7 @@ void Reset_Handler(void) {
  and 1 MHz respectively, we don't, but we should probably not reuse those two GCLKs for
  other clock frequencies */
 
-void SystemInit(void) {
-    /* zero wait states */
-    NVMCTRL->CTRLA.reg |= NVMCTRL_CTRLA_RWS(0);
-
+static void switch_cpu_to_32kHz(void) {
     /* enable 32 kHz xtal oscillator */
 #ifndef CRYSTALLESS
     OSC32KCTRL->XOSC32K.reg = OSC32KCTRL_XOSC32K_ENABLE | OSC32KCTRL_XOSC32K_EN1K | OSC32KCTRL_XOSC32K_EN32K | OSC32KCTRL_XOSC32K_CGM_XT | OSC32KCTRL_XOSC32K_XTALEN;
@@ -405,7 +402,9 @@ void SystemInit(void) {
     /* temporarily use the ulp oscillator for generic clock 0 */
     GCLK->GENCTRL[0].reg = GCLK_GENCTRL_SRC(GCLK_GENCTRL_SRC_OSCULP32K) | GCLK_GENCTRL_GENEN;
     while (GCLK->SYNCBUSY.reg & GCLK_SYNCBUSY_GENCTRL0);
+}
 
+static void switch_cpu_from_32kHz_to_fast(void) {
     /* bring up dfll in open loop mode */
 
     OSCCTRL->DFLLCTRLA.reg = 0;
@@ -460,6 +459,14 @@ void SystemInit(void) {
 
     /* with no divider */
     MCLK->CPUDIV.reg = MCLK_CPUDIV_DIV_DIV1;
+}
+
+void SystemInit(void) {
+    /* zero wait states */
+    NVMCTRL->CTRLA.reg |= NVMCTRL_CTRLA_RWS(0);
+
+    switch_cpu_to_32kHz();
+    switch_cpu_from_32kHz_to_fast();
 
     /* use ldo regulator */
     SUPC->VREG.bit.SEL = 0;
