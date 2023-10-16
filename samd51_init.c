@@ -380,8 +380,10 @@ void Reset_Handler(void) {
  other clock frequencies */
 
 static void switch_cpu_to_32kHz(void) {
+#ifdef CRYSTALLESS
+    OSC32KCTRL->OSCULP32K.bit.EN32K = 1;
+#else
     /* enable 32 kHz xtal oscillator */
-#ifndef CRYSTALLESS
     OSC32KCTRL->XOSC32K.reg = OSC32KCTRL_XOSC32K_ENABLE | OSC32KCTRL_XOSC32K_EN1K | OSC32KCTRL_XOSC32K_EN32K | OSC32KCTRL_XOSC32K_CGM_XT | OSC32KCTRL_XOSC32K_XTALEN;
     while ((OSC32KCTRL->STATUS.reg & OSC32KCTRL_STATUS_XOSC32KRDY) == 0);
 #endif
@@ -480,7 +482,7 @@ void SystemInit(void) {
 #ifdef CRYSTALLESS
     OSC32KCTRL->XOSC32K.reg = 0;
 #else
-    OSC32KCTRL->OSCULP32K.reg = 0;
+    OSC32KCTRL->OSCULP32K.reg &= ~(OSC32KCTRL_OSCULP32K_EN32K | OSC32KCTRL_OSCULP32K_EN1K);
 #endif
 
     /* deviation from adafruit/arduino: removed debugging stuff */
