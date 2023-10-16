@@ -9,15 +9,21 @@
 #include <samd.h>
 #endif
 
+#ifdef CRYSTALLESS
+#define PORT0_LED_PIN 22U
+#else
+#define PORT0_LED_PIN 23U
+#endif
+
 void led_init(void) {
     /* pad PA23 on samd51 (pin 13 on the adafruit feather m4 express) */
-    PORT->Group[0].OUTCLR.reg = 1U << 23;
-    PORT->Group[0].DIRSET.reg = 1U << 23;
-    PORT->Group[0].PINCFG[23].reg = 0;
+    PORT->Group[0].OUTCLR.reg = 1U << PORT0_LED_PIN;
+    PORT->Group[0].DIRSET.reg = 1U << PORT0_LED_PIN;
+    PORT->Group[0].PINCFG[PORT0_LED_PIN].reg = 0;
 }
 
-void led_on(void) { PORT->Group[0].OUTSET.reg = 1U << 23; }
-void led_off(void) { PORT->Group[0].OUTCLR.reg = 1U << 23; }
+void led_on(void) { PORT->Group[0].OUTSET.reg = 1U << PORT0_LED_PIN; }
+void led_off(void) { PORT->Group[0].OUTCLR.reg = 1U << PORT0_LED_PIN; }
 
 void timer4_init(void) {
     /* make sure the APB is enabled for TC4 */
