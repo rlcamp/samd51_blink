@@ -423,8 +423,8 @@ void SystemInit(void) {
     /* chip errata 2.8.3 workaround says to set dfllmul, then clear ctrlb to select open loop, then
      enable the dfll, then do this weird dfllval reload thing, then set dfllctrlb to final value */
     OSCCTRL->DFLLVAL.reg = OSCCTRL->DFLLVAL.reg;
-    while( OSCCTRL->DFLLSYNC.bit.DFLLVAL);
-    
+    while (OSCCTRL->DFLLSYNC.bit.DFLLVAL);
+
     OSCCTRL->DFLLCTRLB.reg = OSCCTRL_DFLLCTRLB_WAITLOCK | OSCCTRL_DFLLCTRLB_CCDIS | OSCCTRL_DFLLCTRLB_USBCRM;
     while (!OSCCTRL->STATUS.bit.DFLLRDY);
 
