@@ -470,8 +470,11 @@ void SystemInit(void) {
     __enable_irq();
 
     /* shut off 32 kHz oscillators we're not using */
-//    OSC32KCTRL->XOSC32K.reg = 0;
+#ifdef CRYSTALLESS
+    OSC32KCTRL->XOSC32K.reg = 0;
+#else
     OSC32KCTRL->OSCULP32K.reg = 0;
+#endif
 
     /* deviation from adafruit/arduino: removed debugging stuff */
 
