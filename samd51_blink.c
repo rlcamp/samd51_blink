@@ -1,4 +1,3 @@
-#include <stdatomic.h>
 #include <math.h>
 
 #ifdef NON_ANCIENT_HEADER_PATHS
@@ -58,7 +57,7 @@ void timer_init(void) {
     while (TC3->COUNT16.SYNCBUSY.bit.ENABLE);
 }
 
-static volatile _Atomic unsigned long wakes = 0;
+static unsigned long wakes = 0;
 
 void TC3_Handler(void) {
     if (!TC3->COUNT16.INTFLAG.bit.MC0) return;
@@ -68,9 +67,9 @@ void TC3_Handler(void) {
 }
 
 void sleep_until_next_timer_interval(void) {
-    static unsigned long wakes_prev = 0;
-    while (wakes - wakes_prev < 1) __WFI();
-    wakes_prev++;
+    static unsigned long wakes_acknowledged = 0;
+    while (*(volatile unsigned long *)&wakes == wakes_acknowledged) __WFI();
+    wakes_acknowledged++;
 }
 
 int main(void) {
