@@ -25,44 +25,44 @@ void led_init(void) {
 void led_on(void) { PORT->Group[0].OUTSET.reg = 1U << PORT0_LED_PIN; }
 void led_off(void) { PORT->Group[0].OUTCLR.reg = 1U << PORT0_LED_PIN; }
 
-void timer4_init(void) {
-    /* make sure the APB is enabled for TC4 */
-    MCLK->APBCMASK.reg |= MCLK_APBCMASK_TC4;
+void timer_init(void) {
+    /* make sure the APB is enabled for TC3 */
+    MCLK->APBBMASK.reg |= MCLK_APBBMASK_TC3;
     
-    /* use the 32 kHz clock peripheral as the source for TC4 */
-    GCLK->PCHCTRL[TC4_GCLK_ID].reg = GCLK_PCHCTRL_GEN_GCLK3_Val | (1U << GCLK_PCHCTRL_CHEN_Pos);
+    /* use the 32 kHz clock peripheral as the source for TC3 */
+    GCLK->PCHCTRL[TC3_GCLK_ID].reg = GCLK_PCHCTRL_GEN_GCLK3_Val | (1U << GCLK_PCHCTRL_CHEN_Pos);
     while (GCLK->SYNCBUSY.reg);
     
-    /* reset the TC4 peripheral */
-    TC4->COUNT16.CTRLA.bit.SWRST = 1;
-    while (TC4->COUNT16.SYNCBUSY.bit.SWRST);
+    /* reset the TC3 peripheral */
+    TC3->COUNT16.CTRLA.bit.SWRST = 1;
+    while (TC3->COUNT16.SYNCBUSY.bit.SWRST);
     
     /* put it in 16 bit mode */
-    TC4->COUNT16.CTRLA.bit.MODE = TC_CTRLA_MODE_COUNT16_Val;
+    TC3->COUNT16.CTRLA.bit.MODE = TC_CTRLA_MODE_COUNT16_Val;
     
     /* timer ticks will be 32 kHz clock ticks divided by this prescaler value */
-    TC4->COUNT16.CTRLA.bit.PRESCALER = TC_CTRLA_PRESCALER_DIV1_Val;
+    TC3->COUNT16.CTRLA.bit.PRESCALER = TC_CTRLA_PRESCALER_DIV1_Val;
     
     /* counter resets after the value in cc[0], i.e. its period is that number plus one */
-    TC4->COUNT16.WAVE.reg = TC_WAVE_WAVEGEN_MFRQ;
-    TC4->COUNT16.CC[0].reg = 16383;
+    TC3->COUNT16.WAVE.reg = TC_WAVE_WAVEGEN_MFRQ;
+    TC3->COUNT16.CC[0].reg = 16383;
     
     /* fire an interrupt whenever counter equals that value */
-    TC4->COUNT16.INTENSET.reg = 0;
-    TC4->COUNT16.INTENSET.bit.MC0 = 1;
-    NVIC_EnableIRQ(TC4_IRQn);
+    TC3->COUNT16.INTENSET.reg = 0;
+    TC3->COUNT16.INTENSET.bit.MC0 = 1;
+    NVIC_EnableIRQ(TC3_IRQn);
     
     /* enable the timer */
-    while (TC4->COUNT16.SYNCBUSY.reg);
-    TC4->COUNT16.CTRLA.bit.ENABLE = 1;
-    while (TC4->COUNT16.SYNCBUSY.bit.ENABLE);
+    while (TC3->COUNT16.SYNCBUSY.reg);
+    TC3->COUNT16.CTRLA.bit.ENABLE = 1;
+    while (TC3->COUNT16.SYNCBUSY.bit.ENABLE);
 }
 
 static volatile _Atomic unsigned long wakes = 0;
 
-void TC4_Handler(void) {
-    if (!TC4->COUNT16.INTFLAG.bit.MC0) return;
-    TC4->COUNT16.INTFLAG.reg = (TC_INTFLAG_Type){ .bit.MC0 = 1 }.reg;
+void TC3_Handler(void) {
+    if (!TC3->COUNT16.INTFLAG.bit.MC0) return;
+    TC3->COUNT16.INTFLAG.reg = (TC_INTFLAG_Type){ .bit.MC0 = 1 }.reg;
     
     wakes++;
 }
@@ -75,7 +75,7 @@ void sleep_until_next_timer_interval(void) {
 
 int main(void) {
     led_init();
-    timer4_init();
+    timer_init();
     
     while (1) {
         sleep_until_next_timer_interval();
