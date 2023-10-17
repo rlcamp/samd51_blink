@@ -6,8 +6,6 @@
  - within a sketch in the arduino ide using the adafruit samd core
  */
 
-#ifdef __SAMD51__
-
 #if __has_include(<samd51.h>)
 /* newer cmsis-atmel from upstream */
 #include <samd51.h>
@@ -511,7 +509,3 @@ void SystemInit(void) {
 }
 
 __attribute((weak)) void _init(void) { }
-
-#else
-#warning lol todo
-#endif
