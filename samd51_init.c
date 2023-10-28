@@ -26,14 +26,20 @@ extern uint32_t __StackTop; /* address of this is the initial value of the stack
 
 /* execution nominally starts here on reset (actually when exiting bootloader) */
 void Reset_Handler(void) {
-    /* TODO: these comparisons are UB but this is how cmsis works, fix it somehow */
-    const unsigned size_to_copy = sizeof(uint32_t) * (&__data_end__ - &__data_start__);
-    if (&__etext != &__data_start__ && size_to_copy)
-        /* TODO: this subtraction is UB for the same reasons */
-        __builtin_memcpy(&__data_start__, &__etext, size_to_copy);
+    uint32_t * data_start = &__data_start__, * data_end = &__data_end__;
+    uint32_t * bss_start = &__bss_start__, * bss_end = &__bss_end__;
+    uint32_t * etext = &__etext;
 
-    /* clear the bss section. TODO: size is UB for same reason as above  */
-    __builtin_memset(&__bss_start__, 0, sizeof(uint32_t) * (&__bss_end__ - &__bss_start__));
+    /* pointer laundering, since otherwise the compares and subtracts below would be UB */
+    asm volatile("" : "+r"(data_start), "+r"(data_end), "+r"(bss_start), "+r"(bss_end), "+r"(etext) ::);
+
+    /* copy data section from flash to sram */
+    const unsigned size_to_copy = sizeof(uint32_t) * (data_end - data_start);
+    if (etext != data_start && size_to_copy)
+        __builtin_memcpy(data_start, etext, size_to_copy);
+
+    /* clear the bss section in sram */
+    __builtin_memset(bss_start, 0, sizeof(uint32_t) * (bss_end - bss_start));
 
     /* enable floating point and flush state */
     SCB->CPACR |= (0xFu << 20);
