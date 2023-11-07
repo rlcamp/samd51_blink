@@ -7,12 +7,14 @@
  - within a sketch in the arduino ide, using the adafruit samd core
  */
 
-#if __has_include(<samd51.h>)
-/* newer cmsis-atmel from upstream */
+#if __has_include(<component-version.h>)
+/* as invoked by Makefile, regardless of cmsis-atmel version */
+#include <component-version.h>
 #include <samd51.h>
 #else
-/* older cmsis-atmel packaged by adafruit/arduino */
-#include <samd.h>
+/* as invoked by arduino ide */
+#include <samd51/include/component-version.h>
+#include <samd51/include/samd51.h>
 #endif
 
 /* symbols provided by linker script, referred to within Reset_Handler and exception_table.
@@ -231,15 +233,26 @@ __attribute__((used, section(".isr_vector"))) const DeviceVectors exception_tabl
 
     /* cortex-m4 handlers */
     .pfnReset_Handler = (void *)Reset_Handler, /* this table entry defines where pc starts */
+#if BUILD_NUMBER == 61
+    .pfnNMI_Handler = (void *)NMI_Handler,
+#else
     .pfnNonMaskableInt_Handler = (void *)NMI_Handler,
+#endif
     .pfnHardFault_Handler = (void *)HardFault_Handler,
+#if BUILD_NUMBER == 61
+    .pfnMemManage_Handler = (void *)MemManage_Handler,
+#else
     .pfnMemManagement_Handler = (void *)MemManage_Handler,
+#endif
     .pfnBusFault_Handler = (void *)BusFault_Handler,
     .pfnUsageFault_Handler = (void *)UsageFault_Handler,
-
+#if BUILD_NUMBER == 61
+    .pfnSVC_Handler = (void *)SVC_Handler,
+    .pfnDebugMon_Handler = (void *)DebugMon_Handler,
+#else
     .pfnSVCall_Handler = (void *)SVC_Handler,
     .pfnDebugMonitor_Handler = (void *)DebugMon_Handler,
-
+#endif
     .pfnPendSV_Handler = (void *)PendSV_Handler,
     .pfnSysTick_Handler = (void *)SysTick_Handler,
 
