@@ -13,12 +13,12 @@ cd ..
 
 if [ ! -d ~/Downloads/arm-gnu-toolchain-*-arm-none-eabi ]; then
     if uname -sm | grep 'Linux x86_64' ; then
-        curl -LO https://developer.arm.com/-/media/Files/downloads/gnu/12.2.mpacbti-rel1/binrel/arm-gnu-toolchain-12.2.mpacbti-rel1-x86_64-arm-none-eabi.tar.xz
-        tar Jxf arm-gnu-toolchain-12.2.mpacbti-rel1-x86_64-arm-none-eabi.tar.xz
+        curl -LO https://developer.arm.com/-/media/Files/downloads/gnu/13.2.rel1/binrel/arm-gnu-toolchain-13.2.rel1-x86_64-arm-none-eabi.tar.xz
+        tar Jxf arm-gnu-toolchain-13.2.rel1-x86_64-arm-none-eabi.tar.xz
     else
-        curl -LO https://developer.arm.com/-/media/Files/downloads/gnu/12.2.mpacbti-rel1/binrel/arm-gnu-toolchain-12.2.mpacbti-rel1-darwin-arm64-arm-none-eabi.tar.xz
-        tar Jxf arm-gnu-toolchain-12.2.mpacbti-rel1-darwin-arm64-arm-none-eabi.tar.xz
-        cd arm-gnu-toolchain-12.2.mpacbti-rel1-darwin-arm64-arm-none-eabi
+        curl -LO https://developer.arm.com/-/media/Files/downloads/gnu/13.2.rel1/binrel/arm-gnu-toolchain-13.2.rel1-darwin-arm64-arm-none-eabi.tar.xz
+        tar Jxf arm-gnu-toolchain-13.2.rel1-darwin-arm64-arm-none-eabi.tar.xz
+        cd arm-gnu-toolchain-13.2.rel1-darwin-arm64-arm-none-eabi
         find . -perm +111 -type f | while read k; do cat $k > .tmp && chmod +x .tmp && mv .tmp $k; done
         cd ..
     fi
@@ -26,5 +26,5 @@ fi
 
 git clone --depth 1 https://github.com/shumatech/BOSSA
 cd BOSSA
-make bossac 2> >(grep -v found)
+make bossac CXXFLAGS="-Wno-error=unqualified-std-cast-call" 2> >(grep -v found)
 cd ..
