@@ -76,6 +76,11 @@ void TC3_Handler(void) {
     TC3->COUNT16.INTFLAG.reg = (TC_INTFLAG_Type){ .bit.MC0 = 1 }.reg;
 
     wakes++;
+
+    /* arm an321 page 22 fairly strongly suggests this is necessary prior to exception
+     return (or will be on future processors) when the first thing the processor wants
+     to do afterward depends on state changed in the handler */
+    __DSB();
 }
 
 int main(void) {
@@ -103,6 +108,7 @@ int main(void) {
          a guarantee that we will never spuriously sleep when we should have stayed awake to
          handle an already-pending interrupt, as is possible with WFI if not disabling
          interrupts during sleep (which adds latency in handling them on wake) */
+        __DSB();
         __WFE();
     }
 }
