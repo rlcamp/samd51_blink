@@ -12,7 +12,7 @@
 #include <component-version.h>
 #include <samd51.h>
 #else
-/* as invoked by arduino ide */
+/* as invoked by a certain ide, in case people want to use it to test modules in isolation */
 #include <samd51/include/component-version.h>
 #include <samd51/include/samd51.h>
 #endif
@@ -21,8 +21,8 @@
  deviation from cmsis: these are the symbol names provided by the adafruit linker script,
  with which we want to remain compatible */
 
-extern uint32_t __etext; /* address of this is where data goes in RAM */
-extern uint32_t __data_start__, __data_end__; /* addresses of these are where data comes from in flash */
+extern uint32_t __etext; /* address of this is where data comes from in flash */
+extern uint32_t __data_start__, __data_end__; /* addresses of these are where data goes in RAM */
 extern uint32_t __bss_start__, __bss_end__; /* addresses of these are where bss goes in RAM */
 extern uint32_t __StackTop; /* address of this is the initial value of the stack pointer */
 
