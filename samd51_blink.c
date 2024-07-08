@@ -13,17 +13,17 @@
 #define PORT0_LED_PIN 23U
 #endif
 
-void led_init(void) {
+static void led_init(void) {
     /* pad PA23 on samd51 (pin 13 on the adafruit feather m4 express) */
     PORT->Group[0].OUTCLR.reg = 1U << PORT0_LED_PIN;
     PORT->Group[0].DIRSET.reg = 1U << PORT0_LED_PIN;
     PORT->Group[0].PINCFG[PORT0_LED_PIN].reg = 0;
 }
 
-void led_on(void) { PORT->Group[0].OUTSET.reg = 1U << PORT0_LED_PIN; }
-void led_off(void) { PORT->Group[0].OUTCLR.reg = 1U << PORT0_LED_PIN; }
+static void led_on(void) { PORT->Group[0].OUTSET.reg = 1U << PORT0_LED_PIN; }
+static void led_off(void) { PORT->Group[0].OUTCLR.reg = 1U << PORT0_LED_PIN; }
 
-void timer_init(void) {
+static void timer_init(void) {
     /* assume GCLK3 is one or the other 32 kHz reference, and we need to make sure it is
      enabled and allowed to run in stdby */
 #ifdef CRYSTALLESS
@@ -88,7 +88,7 @@ int main(void) {
 
     led_init();
     timer_init();
-
+    led_on();
     unsigned wakes_acknowledged = 0;
 
     while (1) {

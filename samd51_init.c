@@ -67,10 +67,10 @@ void Reset_Handler(void) {
 }
 
 /* default dummy handler, hangs forever if encountered */
-void Dummy_Handler(void) { while (1) __WFI(); }
+static void Dummy_Handler(void) { while (1) __WFI(); }
 
 /* default empty handler, returns harmless if encountered */
-void Empty_Handler(void) { }
+static void Empty_Handler(void) { }
 
 /* upstream cmsis calls this NonMaskableInt_Handler, TODO: support both symbol names? */
 __attribute__ ((weak, alias("Dummy_Handler"))) void NMI_Handler(void);
@@ -557,6 +557,9 @@ void SystemInit(void) {
         .TRIM = (*((uint32_t *)USB_FUSES_TRIM_ADDR) & USB_FUSES_TRIM_Msk) >> USB_FUSES_TRIM_Pos
     }}.reg;
 }
+
+/* silence compiler warning about no previous prototype */
+extern void _init(void);
 
 /* newlib expects to be able to call this */
 __attribute((weak)) void _init(void) { }
