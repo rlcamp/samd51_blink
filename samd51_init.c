@@ -27,7 +27,7 @@ extern uint32_t __bss_start__, __bss_end__; /* addresses of these are where bss 
 extern uint32_t __StackTop; /* address of this is the initial value of the stack pointer */
 
 /* execution nominally starts here on reset (actually when exiting bootloader) */
-void Reset_Handler(void) {
+__attribute((noreturn)) void Reset_Handler(void) {
     uint32_t * data_start = &__data_start__, * data_end = &__data_end__;
     uint32_t * bss_start = &__bss_start__, * bss_end = &__bss_end__;
     uint32_t * etext = &__etext;

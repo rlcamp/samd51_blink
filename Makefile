@@ -20,7 +20,7 @@ CFLAGS?=-O2
 
 TARGET_ARCH?=-mcpu=cortex-m4 -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16
 
-CPPFLAGS?=-Wall -Wextra -Wshadow -Wmissing-prototypes
+CPPFLAGS?=-Wall -Wextra -Wshadow -Wmissing-prototypes -Wstack-usage=128
 
 # specifying CPPFLAGS at the command line does not affect whether these are appended
 # board specific
