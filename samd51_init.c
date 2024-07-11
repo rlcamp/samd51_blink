@@ -501,7 +501,7 @@ static void switch_cpu_from_32kHz_to_fast(void) {
         while (GCLK->SYNCBUSY.reg & GCLK_SYNCBUSY_GENCTRL1);
 
         /* use the 120 MHz clock for the cpu */
-        GCLK->GENCTRL[0].reg = GCLK_GENCTRL_SRC(GCLK_GENCTRL_SRC_DPLL0) | GCLK_GENCTRL_IDC | GCLK_GENCTRL_GENEN;
+        GCLK->GENCTRL[0].reg = GCLK_GENCTRL_SRC(GCLK_GENCTRL_SRC_DPLL0_Val) | GCLK_GENCTRL_IDC | GCLK_GENCTRL_GENEN;
     }
 
     while (GCLK->SYNCBUSY.reg & GCLK_SYNCBUSY_GENCTRL0);
