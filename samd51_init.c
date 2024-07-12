@@ -440,15 +440,15 @@ static void switch_cpu_to_32kHz(void) {
 
     /* one or the other of the 32 kHz oscillators will be generic clock generator 3 */
 #ifndef CRYSTALLESS
-    GCLK->GENCTRL[3].reg = GCLK_GENCTRL_SRC(GCLK_GENCTRL_SRC_XOSC32K) | GCLK_GENCTRL_GENEN;
+    GCLK->GENCTRL[3].reg = GCLK_GENCTRL_SRC(GCLK_GENCTRL_SRC_XOSC32K_Val) | GCLK_GENCTRL_GENEN;
 #else
-    GCLK->GENCTRL[3].reg = GCLK_GENCTRL_SRC(GCLK_GENCTRL_SRC_OSCULP32K) | GCLK_GENCTRL_GENEN;
+    GCLK->GENCTRL[3].reg = GCLK_GENCTRL_SRC(GCLK_GENCTRL_SRC_OSCULP32K_Val) | GCLK_GENCTRL_GENEN;
 #endif
 
     while (GCLK->SYNCBUSY.reg & GCLK_SYNCBUSY_GENCTRL3);
 
     /* temporarily use the ulp oscillator for generic clock 0 */
-    GCLK->GENCTRL[0].reg = GCLK_GENCTRL_SRC(GCLK_GENCTRL_SRC_OSCULP32K) | GCLK_GENCTRL_GENEN;
+    GCLK->GENCTRL[0].reg = GCLK_GENCTRL_SRC(GCLK_GENCTRL_SRC_OSCULP32K_Val) | GCLK_GENCTRL_GENEN;
     while (GCLK->SYNCBUSY.reg & GCLK_SYNCBUSY_GENCTRL0);
 }
 
@@ -476,7 +476,7 @@ static void switch_cpu_from_32kHz_to_fast(void) {
 
     if (48000000 == F_CPU)
     /* use the 48 MHz clock for the cpu */
-        GCLK->GENCTRL[0].reg = GCLK_GENCTRL_SRC(GCLK_GENCTRL_SRC_DFLL) | GCLK_GENCTRL_IDC | GCLK_GENCTRL_GENEN;
+        GCLK->GENCTRL[0].reg = GCLK_GENCTRL_SRC(GCLK_GENCTRL_SRC_DFLL_Val) | GCLK_GENCTRL_IDC | GCLK_GENCTRL_GENEN;
     else {
         /* divide by 48 to get a 1 MHz clock for generic clock generator 5 */
         GCLK->GENCTRL[5].reg = GCLK_GENCTRL_SRC(GCLK_GENCTRL_SRC_DFLL_Val) | GCLK_GENCTRL_GENEN | GCLK_GENCTRL_DIV(48u);
