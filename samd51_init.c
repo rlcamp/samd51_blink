@@ -29,11 +29,10 @@ extern uint32_t __StackTop; /* address of this is the initial value of the stack
 /* execution nominally starts here on reset (actually when exiting bootloader) */
 __attribute((noreturn)) void Reset_Handler(void) {
     uint32_t * data_start = &__data_start__, * data_end = &__data_end__;
-    uint32_t * bss_start = &__bss_start__, * bss_end = &__bss_end__;
     uint32_t * etext = &__etext;
 
     /* pointer laundering, since otherwise the compares and subtracts below would be UB */
-    asm volatile("" : "+r"(data_start), "+r"(data_end), "+r"(bss_start), "+r"(bss_end), "+r"(etext) ::);
+    asm volatile("" : "+r"(data_start), "+r"(data_end), "+r"(etext) ::);
 
     /* copy data section from flash to sram */
     const unsigned size_to_copy = sizeof(uint32_t) * (data_end - data_start);
@@ -41,6 +40,9 @@ __attribute((noreturn)) void Reset_Handler(void) {
         __builtin_memcpy(data_start, etext, size_to_copy);
 
     /* clear the bss section in sram */
+    uint32_t * bss_start = &__bss_start__, * bss_end = &__bss_end__;
+    asm volatile("" : "+r"(bss_start), "+r"(bss_end) ::);
+
     __builtin_memset(bss_start, 0, sizeof(uint32_t) * (bss_end - bss_start));
 
     /* enable floating point and flush state */
