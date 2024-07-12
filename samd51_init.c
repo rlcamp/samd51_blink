@@ -35,9 +35,8 @@ __attribute((noreturn)) void Reset_Handler(void) {
     asm volatile("" : "+r"(data_start), "+r"(data_end), "+r"(etext) ::);
 
     /* copy data section from flash to sram */
-    const unsigned size_to_copy = sizeof(uint32_t) * (data_end - data_start);
-    if (etext != data_start && size_to_copy)
-        __builtin_memcpy(data_start, etext, size_to_copy);
+    if (etext != data_start)
+        __builtin_memcpy(data_start, etext, sizeof(uint32_t) * (data_end - data_start));
 
     /* clear the bss section in sram */
     uint32_t * bss_start = &__bss_start__, * bss_end = &__bss_end__;
