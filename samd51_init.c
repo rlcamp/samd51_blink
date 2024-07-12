@@ -26,22 +26,19 @@ extern uint32_t __data_start__, __data_end__; /* addresses of these are where da
 extern uint32_t __bss_start__, __bss_end__; /* addresses of these are where bss goes in RAM */
 extern uint32_t __StackTop; /* address of this is the initial value of the stack pointer */
 
+/* pointer laundering, since otherwise compare/subtract on those addresses would be UB */
+#define LAUNDER(p) ({ void * _p = p; asm volatile("" : "+r"(_p) ::); _p; })
+
 /* execution nominally starts here on reset (actually when exiting bootloader) */
 __attribute((noreturn)) void Reset_Handler(void) {
-    uint32_t * data_start = &__data_start__, * data_end = &__data_end__;
-    uint32_t * etext = &__etext;
-
-    /* pointer laundering, since otherwise the compares and subtracts below would be UB */
-    asm volatile("" : "+r"(data_start), "+r"(data_end), "+r"(etext) ::);
-
     /* copy data section from flash to sram */
+    uint32_t * data_start = LAUNDER(&__data_start__), * data_end = LAUNDER(&__data_end__);
+    uint32_t * etext = LAUNDER(&__etext);
     if (etext != data_start)
         __builtin_memcpy(data_start, etext, sizeof(uint32_t) * (data_end - data_start));
 
     /* clear the bss section in sram */
-    uint32_t * bss_start = &__bss_start__, * bss_end = &__bss_end__;
-    asm volatile("" : "+r"(bss_start), "+r"(bss_end) ::);
-
+    uint32_t * bss_start = LAUNDER(&__bss_start__), * bss_end = LAUNDER(&__bss_end__);
     __builtin_memset(bss_start, 0, sizeof(uint32_t) * (bss_end - bss_start));
 
     /* enable floating point and flush state */
