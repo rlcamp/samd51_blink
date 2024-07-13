@@ -21,25 +21,19 @@
  deviation from cmsis: these are the symbol names provided by the adafruit linker script,
  with which we want to remain compatible */
 
-extern uint32_t __etext; /* address of this is where data comes from in flash */
-extern uint32_t __data_start__, __data_end__; /* addresses of these are where data goes in RAM */
-extern uint32_t __bss_start__, __bss_end__; /* addresses of these are where bss goes in RAM */
-extern uint32_t __StackTop; /* address of this is the initial value of the stack pointer */
-
-/* pointer laundering, since otherwise compare/subtract on those addresses would be UB */
-#define LAUNDER(p) ({ void * _p = p; asm volatile("" : "+r"(_p) ::); _p; })
+extern unsigned char __etext[]; /* where data comes from in flash */
+extern unsigned char __data_start__[], __data_end__[]; /* where data goes in RAM */
+extern unsigned char __bss_start__[], __bss_end__[]; /* here bss goes in RAM */
+extern unsigned char __StackTop[]; /* initial value of the stack pointer */
 
 /* execution nominally starts here on reset (actually when exiting bootloader) */
 __attribute((noreturn)) void Reset_Handler(void) {
     /* copy data section from flash to sram */
-    uint32_t * data_start = LAUNDER(&__data_start__), * data_end = LAUNDER(&__data_end__);
-    uint32_t * etext = LAUNDER(&__etext);
-    if (etext != data_start)
-        __builtin_memcpy(data_start, etext, sizeof(uint32_t) * (data_end - data_start));
+    if ((uintptr_t)__etext != (uintptr_t)__data_start__)
+        __builtin_memcpy(__data_start__, __etext, (uintptr_t)__data_end__ - (uintptr_t)__data_start__);
 
     /* clear the bss section in sram */
-    uint32_t * bss_start = LAUNDER(&__bss_start__), * bss_end = LAUNDER(&__bss_end__);
-    __builtin_memset(bss_start, 0, sizeof(uint32_t) * (bss_end - bss_start));
+    __builtin_memset(__bss_start__, 0, (uintptr_t)__bss_end__ - (uintptr_t)__bss_start__);
 
     /* enable floating point and flush state */
     SCB->CPACR |= (0xFu << 20);
@@ -227,7 +221,7 @@ __attribute__ ((weak, alias("Dummy_Handler"))) void SDHC1_Handler(void);
 /* deviation from upstream cmsis: this is in .isr_vector instead of .vectors */
 __attribute__((used, section(".isr_vector"))) const DeviceVectors exception_table = {
     /* initial stack pointer */
-    .pvStack = (void *)(&__StackTop),
+    .pvStack = __StackTop,
 
     /* cortex-m4 handlers */
     .pfnReset_Handler = (void *)Reset_Handler, /* this table entry defines where pc starts */
