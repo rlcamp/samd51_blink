@@ -469,7 +469,7 @@ static void switch_cpu_from_32kHz_to_fast(void) {
     OSCCTRL->DFLLVAL.reg = OSCCTRL->DFLLVAL.reg;
     while (OSCCTRL->DFLLSYNC.bit.DFLLVAL);
 
-    OSCCTRL->DFLLCTRLB.reg = (OSCCTRL_DFLLCTRLB_Type) { .bit = { .WAITLOCK = 1, .CCDIS = 1, .USBCRM = 1 }}.reg;
+    OSCCTRL->DFLLCTRLB.reg = (OSCCTRL_DFLLCTRLB_Type) { .bit = { .WAITLOCK = 1, .CCDIS = 1 }}.reg;
     while (!OSCCTRL->STATUS.bit.DFLLRDY);
 
     if (48000000 == F_CPU)
