@@ -23,7 +23,7 @@
 
 extern unsigned char __etext[]; /* where data comes from in flash */
 extern unsigned char __data_start__[], __data_end__[]; /* where data goes in RAM */
-extern unsigned char __bss_start__[], __bss_end__[]; /* here bss goes in RAM */
+extern unsigned char __bss_start__[], __bss_end__[]; /* where bss goes in RAM */
 extern unsigned char __StackTop[]; /* initial value of the stack pointer */
 
 /* execution nominally starts here on reset (actually when exiting bootloader) */
