@@ -221,7 +221,7 @@ __attribute__ ((weak, alias("Dummy_Handler"))) void SDHC1_Handler(void);
 /* deviation from upstream cmsis: this is in .isr_vector instead of .vectors */
 __attribute__((used, section(".isr_vector"))) const DeviceVectors exception_table = {
     /* initial stack pointer */
-    .pvStack = __StackTop,
+    .pvStack = (void *)(uintptr_t)(HSRAM_ADDR + HSRAM_SIZE),
 
     /* cortex-m4 handlers */
     .pfnReset_Handler = (void *)Reset_Handler, /* this table entry defines where pc starts */
