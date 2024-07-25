@@ -552,6 +552,9 @@ void SystemInit(void) {
         .TRANSP = (*((uint32_t *)USB_FUSES_TRANSP_ADDR) & USB_FUSES_TRANSP_Msk) >> USB_FUSES_TRANSP_Pos,
         .TRIM = (*((uint32_t *)USB_FUSES_TRIM_ADDR) & USB_FUSES_TRIM_Msk) >> USB_FUSES_TRIM_Pos
     }}.reg;
+
+    /* explicitly disable usb just in case the bootloader left it enabled */
+    USB->DEVICE.CTRLA.bit.ENABLE = 0;
 }
 
 /* silence compiler warning about no previous prototype */
