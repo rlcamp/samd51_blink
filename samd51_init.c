@@ -457,6 +457,8 @@ static void switch_cpu_from_32kHz_to_fast(void) {
     GCLK->GENCTRL[6].reg = (GCLK_GENCTRL_Type) { .bit = { .SRC = GCLK_GENCTRL_SRC_OSCULP32K_Val, .GENEN = 1, .DIV = 32U }}.reg;
 #endif
 
+    while (GCLK->SYNCBUSY.bit.GENCTRL6);
+
     /* set the reference clock for the DFLL to GCLK6 */
     GCLK->PCHCTRL[OSCCTRL_GCLK_ID_DFLL48].reg = (GCLK_PCHCTRL_Type) { .bit = { .GEN = GCLK_PCHCTRL_GEN_GCLK6_Val, .CHEN = 1 }}.reg;
 
