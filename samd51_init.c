@@ -466,7 +466,14 @@ static void switch_cpu_from_32kHz_to_fast(void) {
     OSCCTRL->DFLLCTRLA.reg = 0;
 
     /* multiply the 1024 Hz GCLK6 reference by 46875 to get 48 MHz */
-    OSCCTRL->DFLLMUL.reg = (OSCCTRL_DFLLMUL_Type) { .bit = { .CSTEP = 0x1, .FSTEP = 0x1, .MUL = 46875U }}.reg;
+    OSCCTRL->DFLLMUL.reg = (OSCCTRL_DFLLMUL_Type) { .bit = {
+        /* per datasheet, CSTEP and FSTEP should be not more than 50% more than max vals
+         of COARSE and FINE, which are factory-set. setting them to 1 seems to not work
+         on initial powerup */
+        .CSTEP = OSCCTRL->DFLLVAL.bit.COARSE,
+        .FSTEP = OSCCTRL->DFLLVAL.bit.FINE,
+        .MUL = 46875U }
+    }.reg;
     while (OSCCTRL->DFLLSYNC.reg & OSCCTRL_DFLLSYNC_DFLLMUL);
 
     OSCCTRL->DFLLCTRLB.reg = 0;
