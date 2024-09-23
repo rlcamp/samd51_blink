@@ -450,11 +450,21 @@ static void switch_cpu_to_32kHz(void) {
 }
 
 static void switch_cpu_from_32kHz_to_fast(void) {
-    /* bring up dfll in open loop mode */
+    /* one or the other of the 32 kHz oscillators, divided by 32, will be generic clock generator 6 */
+#ifndef CRYSTALLESS
+    GCLK->GENCTRL[6].reg = (GCLK_GENCTRL_Type) { .bit = { .SRC = GCLK_GENCTRL_SRC_XOSC32K_Val, .GENEN = 1, .DIV = 32U }}.reg;
+#else
+    GCLK->GENCTRL[6].reg = (GCLK_GENCTRL_Type) { .bit = { .SRC = GCLK_GENCTRL_SRC_OSCULP32K_Val, .GENEN = 1, .DIV = 32U }}.reg;
+#endif
 
+    /* set the reference clock for the DFLL to GCLK6 */
+    GCLK->PCHCTRL[OSCCTRL_GCLK_ID_DFLL48].reg = (GCLK_PCHCTRL_Type) { .bit = { .GEN = GCLK_PCHCTRL_GEN_GCLK6_Val, .CHEN = 1 }}.reg;
+
+    /* bring up dfll in open loop mode */
     OSCCTRL->DFLLCTRLA.reg = 0;
 
-    OSCCTRL->DFLLMUL.reg = (OSCCTRL_DFLLMUL_Type) { .bit = { .CSTEP = 0x1, .FSTEP = 0x1, .MUL = 0 }}.reg;
+    /* multiply the 1024 Hz GCLK6 reference by 46875 to get 48 MHz */
+    OSCCTRL->DFLLMUL.reg = (OSCCTRL_DFLLMUL_Type) { .bit = { .CSTEP = 0x1, .FSTEP = 0x1, .MUL = 46875U }}.reg;
     while (OSCCTRL->DFLLSYNC.reg & OSCCTRL_DFLLSYNC_DFLLMUL);
 
     OSCCTRL->DFLLCTRLB.reg = 0;
@@ -468,7 +478,8 @@ static void switch_cpu_from_32kHz_to_fast(void) {
     OSCCTRL->DFLLVAL.reg = OSCCTRL->DFLLVAL.reg;
     while (OSCCTRL->DFLLSYNC.bit.DFLLVAL);
 
-    OSCCTRL->DFLLCTRLB.reg = (OSCCTRL_DFLLCTRLB_Type) { .bit = { .WAITLOCK = 1, .CCDIS = 1 }}.reg;
+    /* closed loop mode */
+    OSCCTRL->DFLLCTRLB.reg = (OSCCTRL_DFLLCTRLB_Type) { .bit = { .WAITLOCK = 1, .CCDIS = 1, .MODE = 1 }}.reg;
     while (!OSCCTRL->STATUS.bit.DFLLRDY);
 
     if (48000000 == F_CPU)
