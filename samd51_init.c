@@ -576,8 +576,14 @@ void SystemInit(void) {
     USB->DEVICE.CTRLA.bit.ENABLE = 0;
 }
 
-/* silence compiler warning about no previous prototype */
-extern void _init(void);
-
+/* silence compiler warning about no previous prototype for libc-internal things */
+#pragma GCC diagnostic ignored "-Wmissing-prototypes"
 /* newlib calls this from within __libc_init_array */
 __attribute((weak)) void _init(void) { }
+
+/* suppress newlib+gcc FAs in linker due to libc code that calls these but gets gc'd */
+__attribute((weak)) void _fstat_r(void) { }
+__attribute((weak)) void _close_r(void) { }
+__attribute((weak)) void _isatty_r(void) { }
+__attribute((weak)) void _lseek_r(void) { }
+__attribute((weak)) void _read_r(void) { }

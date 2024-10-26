@@ -32,7 +32,7 @@ override CPPFLAGS+=-D__SKETCH_NAME__=blink -DF_CPU=120000000L -DARDUINO_ARCH_SAM
 LDLIBS=-nostdlib -lm -lgcc -lc_nano -lnosys
 
 # using := here ensures that the value of CFLAGS is prepended to LDFLAGS BEFORE the additional things below are appended to CFLAGS
-LDFLAGS:=${CFLAGS} -Wl,--gc-sections -T${PATH_LINKER_SCRIPT} -Wl,--check-sections -Wl,--unresolved-symbols=report-all -Wl,--warn-common
+LDFLAGS:=${CFLAGS} -Wl,--gc-sections -T${PATH_LINKER_SCRIPT} -Wl,--check-sections -Wl,--unresolved-symbols=report-all -Wl,--warn-common -Wl,--no-warn-rwx-segments
 
 # specifying CFLAGS at the command line does not affect whether these are appended
 override CFLAGS+=-ffunction-sections -fdata-sections --param max-inline-insns-single=500
