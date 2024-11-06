@@ -26,7 +26,7 @@ extern unsigned char __data_start__[], __data_end__[]; /* where data goes in RAM
 extern unsigned char __bss_start__[], __bss_end__[]; /* where bss goes in RAM */
 
 /* execution nominally starts here on reset (actually when exiting bootloader) */
-__attribute((noreturn)) void Reset_Handler(void) {
+__attribute((used, noreturn)) static void Reset_Handler2(void) {
     /* copy data section from flash to sram */
     if ((uintptr_t)__etext != (uintptr_t)__data_start__)
         __builtin_memcpy(__data_start__, __etext, (uintptr_t)__data_end__ - (uintptr_t)__data_start__);
@@ -55,6 +55,18 @@ __attribute((noreturn)) void Reset_Handler(void) {
 
     /* hopefully we never get here but if we do, just sleep forever */
     while (1) __WFI();
+}
+
+/* this is the first thing jumped to by the bootloader */
+__attribute((naked)) void Reset_Handler(void) {
+    asm("ldr r0, =0x41002018\n" /* load address of DSU DID register */
+        "ldrb r0, [r0]\n" /* load lowest byte of DSU DID register into r0 */
+        "cmp r0, #4\n" /* if it is equal to 4, then we know we are on a samd51j20 */
+        "ite eq\n" /* execute the first insn below if eq, else the second insn */
+        "ldreq r0, =0x20040000\n" /* move the stack pointer to the top of 256k of sram */
+        "ldrne r0, =0x20030000\n" /* move the stack pointer to the top of 192k of sram */
+        "msr msp, r0\n"
+        "b Reset_Handler2\n" /* jump to C code for rest of reset handler */);
 }
 
 /* default dummy handler, hangs forever if encountered */
