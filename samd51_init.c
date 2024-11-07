@@ -25,7 +25,8 @@ extern unsigned char __etext[]; /* where data comes from in flash */
 extern unsigned char __data_start__[], __data_end__[]; /* where data goes in RAM */
 extern unsigned char __bss_start__[], __bss_end__[]; /* where bss goes in RAM */
 
-/* execution nominally starts here on reset (actually when exiting bootloader) */
+/* this thinks it is the actual reset handler, and should act as if it is, but is actually
+ jumped to by a bit of bare asm that sets the initial stack pointer based on chip rev */
 __attribute((used, noreturn)) static void Reset_Handler2(void) {
     /* copy data section from flash to sram */
     if ((uintptr_t)__etext != (uintptr_t)__data_start__)
@@ -57,7 +58,7 @@ __attribute((used, noreturn)) static void Reset_Handler2(void) {
     while (1) __WFI();
 }
 
-/* this is the first thing jumped to by the bootloader */
+/* this is the first thing jumped to on startup (or by the bootloader) */
 __attribute((naked)) void Reset_Handler(void) {
     asm("ldr r0, =0x41002018\n" /* load address of DSU DID register */
         "ldrb r0, [r0]\n" /* load lowest byte of DSU DID register into r0 */
