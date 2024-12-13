@@ -525,11 +525,11 @@ static void switch_cpu_from_32kHz_to_fast(void) {
         while (OSCCTRL->Dpll[0].DPLLSTATUS.bit.CLKRDY == 0 || OSCCTRL->Dpll[0].DPLLSTATUS.bit.LOCK == 0);
 
         /* 48 MHz clock, required for usb and many other things */
-        GCLK->GENCTRL[1].reg = (GCLK_GENCTRL_Type) { .bit = { .SRC = GCLK_GENCTRL_SRC_DFLL_Val, .GENEN = 1, .IDC = 1 }}.reg;
+        GCLK->GENCTRL[1].reg = (GCLK_GENCTRL_Type) { .bit = { .SRC = GCLK_GENCTRL_SRC_DFLL_Val, .GENEN = 1 }}.reg;
         while (GCLK->SYNCBUSY.reg & GCLK_SYNCBUSY_GENCTRL1);
 
         /* use the 120 MHz clock for the cpu */
-        GCLK->GENCTRL[0].reg = (GCLK_GENCTRL_Type) { .bit = { .SRC = GCLK_GENCTRL_SRC_DPLL0_Val, .GENEN = 1, .IDC = 1 }}.reg;
+        GCLK->GENCTRL[0].reg = (GCLK_GENCTRL_Type) { .bit = { .SRC = GCLK_GENCTRL_SRC_DPLL0_Val, .GENEN = 1 }}.reg;
     }
 
     while (GCLK->SYNCBUSY.reg & GCLK_SYNCBUSY_GENCTRL0);
@@ -589,8 +589,7 @@ void SystemInit(void) {
     USB->DEVICE.CTRLA.bit.ENABLE = 0;
 }
 
-/* silence compiler warning about no previous prototype */
-extern void _init(void);
-
+/* silence compiler warning about no previous prototype for libc-internal things */
+#pragma GCC diagnostic ignored "-Wmissing-prototypes"
 /* newlib calls this from within __libc_init_array */
 __attribute((weak)) void _init(void) { }
