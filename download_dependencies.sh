@@ -13,16 +13,16 @@ curl -O http://packs.download.atmel.com/Atmel.SAMD51_DFP.1.2.139.atpack
 unzip Atmel.SAMD51_DFP.1.2.139.atpack
 cd ..
 
-if [ ! -d ~/Downloads/arm-gnu-toolchain-13.3-*-arm-none-eabi ]; then
+if [ ! -d ~/Downloads/arm-gnu-toolchain-14.2-*-arm-none-eabi ]; then
     if uname -sm | grep 'Linux x86_64' ; then
-        curl -LO https://developer.arm.com/-/media/Files/downloads/gnu/13.3.rel1/binrel/arm-gnu-toolchain-13.3.rel1-x86_64-arm-none-eabi.tar.xz
-        tar Jxf arm-gnu-toolchain-13.3.rel1-x86_64-arm-none-eabi.tar.xz
+        curl -LO https://developer.arm.com/-/media/Files/downloads/gnu/14.2.rel1/binrel/arm-gnu-toolchain-14.2.rel1-x86_64-arm-none-eabi.tar.xz
+        tar Jxf arm-gnu-toolchain-14.2.rel1-x86_64-arm-none-eabi.tar.xz
     elif uname -sm | grep 'Linux aarch64' ; then
-        curl -LO https://developer.arm.com/-/media/Files/downloads/gnu/13.3.rel1/binrel/arm-gnu-toolchain-13.3.rel1-aarch64-arm-none-eabi.tar.xz
-        tar Jxf arm-gnu-toolchain-13.3.rel1-aarch64-arm-none-eabi.tar.xz
+        curl -LO https://developer.arm.com/-/media/Files/downloads/gnu/14.2.rel1/binrel/arm-gnu-toolchain-14.2.rel1-aarch64-arm-none-eabi.tar.xz
+        tar Jxf arm-gnu-toolchain-14.2.rel1-aarch64-arm-none-eabi.tar.xz
     else
-        curl -LO https://developer.arm.com/-/media/Files/downloads/gnu/13.3.rel1/binrel/arm-gnu-toolchain-13.3.rel1-darwin-arm64-arm-none-eabi.tar.xz
-        tar Jxf arm-gnu-toolchain-13.3.rel1-darwin-arm64-arm-none-eabi.tar.xz
+        curl -LO https://developer.arm.com/-/media/Files/downloads/gnu/14.2.rel1/binrel/arm-gnu-toolchain-14.2.rel1-darwin-arm64-arm-none-eabi.tar.xz
+        tar Jxf arm-gnu-toolchain-14.2.rel1-darwin-arm64-arm-none-eabi.tar.xz
     fi
 fi
 
