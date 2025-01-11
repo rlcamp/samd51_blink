@@ -2,7 +2,7 @@ ifndef USE_ARDUINO
     PATH_CC:=$(shell find ${HOME} -maxdepth 2 -type d -name 'arm-gnu-toolchain*' 2>/dev/null | sort | tail -n1)/bin/
 # to use this, download generic arm-none-eabi-gcc, cmsis, cmsis-atmel, download and compile bossac
     PATH_CMSIS:=$(shell find ${HOME} -maxdepth 2 -type d -name 'CMSIS_5' 2>/dev/null)/CMSIS/
-    PATH_ATMEL:=$(shell find ${HOME} -maxdepth 2 -type d -name 'Atmel.SAMD51_DFP.*' 2>/dev/null)/samd51a/include
+    PATH_ATMEL:=$(shell find ${HOME} -maxdepth 2 -type d -name 'Atmel.SAMD51_DFP.*' 2>/dev/null | sort | tail -n1)/samd51a/include
     PATH_LINKER_SCRIPT:=flash_with_bootloader.ld
 else
     PATH_CC:=$(shell find ${HOME}/Library/Arduino15/packages/adafruit/tools/arm-none-eabi-gcc/ -type d -name bin | sort | tail -n1)
@@ -40,11 +40,8 @@ TARGETS=samd51_blink.bin
 
 all : ${TARGETS}
 
-core.a : samd51_init.o
-	${AR} rcs $@ $^
-
 # implicit rule requires this to have no extension, but it is logically an .elf file
-samd51_blink : samd51_blink.o core.a
+samd51_blink : samd51_blink.o samd51_init.o
 
 samd51_blink.bin : samd51_blink
 	${OBJCOPY} -O binary $< $@
