@@ -3,7 +3,6 @@ ifndef USE_ARDUINO
 # to use this, download generic arm-none-eabi-gcc, cmsis, cmsis-atmel, download and compile bossac
     PATH_CMSIS:=$(shell find ${HOME} -maxdepth 2 -type d -name 'CMSIS_5' 2>/dev/null)/CMSIS/
     PATH_ATMEL:=$(shell find ${HOME} -maxdepth 2 -type d -name 'Atmel.SAMD51_DFP.*' 2>/dev/null)/samd51a/include
-# this is the only thing explicitly needed from adafruit, and only so we don't accidentally overwrite the uf2 bootloader
     PATH_LINKER_SCRIPT:=flash_with_bootloader.ld
 else
     PATH_CC:=$(shell find ${HOME}/Library/Arduino15/packages/adafruit/tools/arm-none-eabi-gcc/ -type d -name bin | sort | tail -n1)
