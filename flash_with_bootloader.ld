@@ -22,6 +22,25 @@ SECTIONS
         *(.text*)
 
         KEEP(*(.init))
+        /* similar to atmel linker script, deviation from cmsis: leave this stuff in rom */
+        . = ALIGN(4);
+        PROVIDE_HIDDEN (__preinit_array_start = .);
+        KEEP(*(.preinit_array))
+        PROVIDE_HIDDEN (__preinit_array_end = .);
+
+        . = ALIGN(4);
+        PROVIDE_HIDDEN (__init_array_start = .);
+        KEEP(*(SORT(.init_array.*)))
+        KEEP(*(.init_array))
+        PROVIDE_HIDDEN (__init_array_end = .);
+
+        /* note destructor stuff is omitted because no call site */
+
+        *crtbegin.o(.ctors)
+        *crtbegin?.o(.ctors)
+        *(EXCLUDE_FILE(*crtend?.o *crtend.o) .ctors)
+        *(SORT(.ctors.*))
+        *(.ctors)
 
         *(.rodata*)
 
@@ -49,26 +68,6 @@ SECTIONS
         *(vtable)
         *(.data)
         *(.data*)
-
-        /* similar to atmel linker script, deviation from cmsis: leave this stuff in rom */
-        . = ALIGN(4);
-        PROVIDE_HIDDEN (__preinit_array_start = .);
-        KEEP(*(.preinit_array))
-        PROVIDE_HIDDEN (__preinit_array_end = .);
-
-        . = ALIGN(4);
-        PROVIDE_HIDDEN (__init_array_start = .);
-        KEEP(*(SORT(.init_array.*)))
-        KEEP(*(.init_array))
-        PROVIDE_HIDDEN (__init_array_end = .);
-
-        /* note destructor stuff is omitted because no call site */
-
-        *crtbegin.o(.ctors)
-        *crtbegin?.o(.ctors)
-        *(EXCLUDE_FILE(*crtend?.o *crtend.o) .ctors)
-        *(SORT(.ctors.*))
-        *(.ctors)
 
         . = ALIGN(4);
         KEEP(*(.ramfunc))
