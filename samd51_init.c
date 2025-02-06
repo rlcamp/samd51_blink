@@ -499,8 +499,10 @@ static void switch_cpu_from_32kHz_to_fast(void) {
     OSCCTRL->DFLLVAL.reg = OSCCTRL->DFLLVAL.reg;
     while (OSCCTRL->DFLLSYNC.bit.DFLLVAL);
 
-    /* closed loop mode */
-    OSCCTRL->DFLLCTRLB.reg = (OSCCTRL_DFLLCTRLB_Type) { .bit = { .WAITLOCK = 1, .CCDIS = 1, .MODE = 1 }}.reg;
+    /* closed loop mode only if using xosc32 and it has not failed */
+    OSCCTRL->DFLLCTRLB.reg = (OSCCTRL_DFLLCTRLB_Type) { .bit = { .WAITLOCK = 1, .CCDIS = 1,
+            .MODE = (GCLK_GENCTRL_SRC_OSCULP32K_Val == GCLK->GENCTRL[3].bit.SRC && !OSC32KCTRL->STATUS.bit.XOSC32KFAIL),
+    }}.reg;
     while (!OSCCTRL->STATUS.bit.DFLLRDY);
 
     if (48000000 == F_CPU)
