@@ -432,15 +432,19 @@ __attribute__((used, section(".isr_vector"))) const DeviceVectors exception_tabl
  other clock frequencies */
 
 static void switch_cpu_to_32kHz(void) {
-#ifdef CRYSTALLESS
     OSC32KCTRL->OSCULP32K.bit.EN32K = 1;
-#else
+
+#ifndef CRYSTALLESS
+    /* fail over to ULP32 if */
+    OSC32KCTRL->CFDCTRL.reg = (OSC32KCTRL_CFDCTRL_Type) { .bit.CFDEN = 1 }.reg;
+
     /* enable 32 kHz xtal oscillator */
     OSC32KCTRL->XOSC32K.reg = (OSC32KCTRL_XOSC32K_Type) { .bit = {
         .ENABLE = 1, .EN1K = 1, .EN32K = 1,
         .CGM = OSC32KCTRL_XOSC32K_CGM_XT_Val,
         .XTALEN = 1
     }}.reg;
+
     while (!OSC32KCTRL->STATUS.bit.XOSC32KRDY);
 #endif
 
@@ -449,11 +453,10 @@ static void switch_cpu_to_32kHz(void) {
     while (GCLK->SYNCBUSY.bit.SWRST);
 
     /* one or the other of the 32 kHz oscillators will be generic clock generator 3 */
-#ifndef CRYSTALLESS
-    GCLK->GENCTRL[3].reg = (GCLK_GENCTRL_Type) { .bit = { .SRC = GCLK_GENCTRL_SRC_XOSC32K_Val, .GENEN = 1 }}.reg;
-#else
-    GCLK->GENCTRL[3].reg = (GCLK_GENCTRL_Type) { .bit = { .SRC = GCLK_GENCTRL_SRC_OSCULP32K_Val, .GENEN = 1 }}.reg;
-#endif
+    GCLK->GENCTRL[3].reg = (GCLK_GENCTRL_Type) { .bit = {
+        .SRC = OSC32KCTRL->XOSC32K.bit.EN32K ? GCLK_GENCTRL_SRC_XOSC32K_Val : GCLK_GENCTRL_SRC_OSCULP32K_Val,
+        .GENEN = 1 }
+    }.reg;
 
     while (GCLK->SYNCBUSY.bit.GENCTRL3);
 
@@ -464,11 +467,7 @@ static void switch_cpu_to_32kHz(void) {
 
 static void switch_cpu_from_32kHz_to_fast(void) {
     /* one or the other of the 32 kHz oscillators, divided by 32, will be generic clock generator 6 */
-#ifndef CRYSTALLESS
-    GCLK->GENCTRL[6].reg = (GCLK_GENCTRL_Type) { .bit = { .SRC = GCLK_GENCTRL_SRC_XOSC32K_Val, .GENEN = 1, .DIV = 32U }}.reg;
-#else
-    GCLK->GENCTRL[6].reg = (GCLK_GENCTRL_Type) { .bit = { .SRC = GCLK_GENCTRL_SRC_OSCULP32K_Val, .GENEN = 1, .DIV = 32U }}.reg;
-#endif
+    GCLK->GENCTRL[6].reg = (GCLK_GENCTRL_Type) { .bit = { .SRC = GCLK->GENCTRL[3].bit.SRC, .GENEN = 1, .DIV = 32U }}.reg;
 
     while (GCLK->SYNCBUSY.bit.GENCTRL6);
 
@@ -553,12 +552,11 @@ void SystemInit(void) {
     CMCC->CTRL.reg = 1;
     __enable_irq();
 
-    /* shut off 32 kHz oscillators we're not using */
-#ifdef CRYSTALLESS
-    OSC32KCTRL->XOSC32K.reg = 0;
-#else
-    OSC32KCTRL->OSCULP32K.reg &= ~(OSC32KCTRL_OSCULP32K_EN32K | OSC32KCTRL_OSCULP32K_EN1K);
-#endif
+    /* shut off whichever 32 kHz oscillator we're not using */
+    if (GCLK_GENCTRL_SRC_OSCULP32K_Val == GCLK->GENCTRL[3].bit.SRC && !OSC32KCTRL->STATUS.bit.XOSC32KFAIL)
+        OSC32KCTRL->XOSC32K.reg = 0;
+    else
+        OSC32KCTRL->OSCULP32K.reg &= ~(OSC32KCTRL_OSCULP32K_EN32K | OSC32KCTRL_OSCULP32K_EN1K);
 
     /* deviation from adafruit/arduino: omitted debugging stuff */
 
