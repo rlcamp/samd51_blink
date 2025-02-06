@@ -436,13 +436,13 @@ static void switch_cpu_to_32kHz(void) {
 
 #ifndef CRYSTALLESS
     /* fail over to ULP32 if */
-    OSC32KCTRL->CFDCTRL.reg = (OSC32KCTRL_CFDCTRL_Type) { .bit.CFDEN = 1 }.reg;
+    OSC32KCTRL->CFDCTRL.reg = (OSC32KCTRL_CFDCTRL_Type) { .bit.CFDEN = 1, .bit.SWBACK = 1 }.reg;
 
     /* enable 32 kHz xtal oscillator */
     OSC32KCTRL->XOSC32K.reg = (OSC32KCTRL_XOSC32K_Type) { .bit = {
         .ENABLE = 1, .EN1K = 1, .EN32K = 1,
         .CGM = OSC32KCTRL_XOSC32K_CGM_XT_Val,
-        .XTALEN = 1
+        .XTALEN = 1, .STARTUP = 0x2
     }}.reg;
 
     while (!OSC32KCTRL->STATUS.bit.XOSC32KRDY);
@@ -499,10 +499,8 @@ static void switch_cpu_from_32kHz_to_fast(void) {
     OSCCTRL->DFLLVAL.reg = OSCCTRL->DFLLVAL.reg;
     while (OSCCTRL->DFLLSYNC.bit.DFLLVAL);
 
-    /* closed loop mode only if using xosc32 and it has not failed */
-    OSCCTRL->DFLLCTRLB.reg = (OSCCTRL_DFLLCTRLB_Type) { .bit = { .WAITLOCK = 1, .CCDIS = 1,
-            .MODE = (GCLK_GENCTRL_SRC_OSCULP32K_Val == GCLK->GENCTRL[3].bit.SRC && !OSC32KCTRL->STATUS.bit.XOSC32KFAIL),
-    }}.reg;
+    /* closed loop mode */
+    OSCCTRL->DFLLCTRLB.reg = (OSCCTRL_DFLLCTRLB_Type) { .bit = { .WAITLOCK = 1, .CCDIS = 1, .MODE = 1 }}.reg;
     while (!OSCCTRL->STATUS.bit.DFLLRDY);
 
     if (48000000 == F_CPU)
