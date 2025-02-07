@@ -24,16 +24,6 @@ static void led_on(void) { PORT->Group[0].OUTSET.reg = 1U << PORT0_LED_PIN; }
 static void led_off(void) { PORT->Group[0].OUTCLR.reg = 1U << PORT0_LED_PIN; }
 
 static void timer_init(void) {
-    /* assume GCLK3 is one or the other 32 kHz reference, and we need to make sure it is
-     enabled and allowed to run in stdby */
-#ifdef CRYSTALLESS
-    OSC32KCTRL->OSCULP32K.bit.EN32K = 1;
-#else
-    OSC32KCTRL->XOSC32K.bit.EN32K = 1;
-    OSC32KCTRL->XOSC32K.bit.RUNSTDBY = 1;
-    while (!OSC32KCTRL->STATUS.bit.XOSC32KRDY);
-#endif
-
     /* make sure the APB is enabled for TC3 */
     MCLK->APBBMASK.bit.TC3_ = 1;
 
