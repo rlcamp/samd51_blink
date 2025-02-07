@@ -434,7 +434,9 @@ __attribute__((used, section(".isr_vector"))) const DeviceVectors exception_tabl
 static void switch_cpu_to_32kHz(void) {
     OSC32KCTRL->OSCULP32K.bit.EN32K = 1;
 
-#ifndef CRYSTALLESS
+#ifdef CRYSTALLESS
+    OSC32KCTRL->XOSC32K.reg = 0;
+#else
     /* fail over to ulp if xosc doesn't start immediately, but switch back once it does */
     if (!OSC32KCTRL->STATUS.bit.XOSC32KRDY)
         OSC32KCTRL->CFDCTRL.reg = (OSC32KCTRL_CFDCTRL_Type) { .bit.CFDEN = 1, .bit.SWBACK = 1 }.reg;
@@ -555,12 +557,6 @@ void SystemInit(void) {
     __disable_irq();
     CMCC->CTRL.reg = 1;
     __enable_irq();
-
-    /* shut off whichever 32 kHz oscillator we're not using */
-    if (GCLK_GENCTRL_SRC_OSCULP32K_Val == GCLK->GENCTRL[3].bit.SRC && !OSC32KCTRL->STATUS.bit.XOSC32KFAIL)
-        OSC32KCTRL->XOSC32K.reg = 0;
-    else
-        OSC32KCTRL->OSCULP32K.reg &= ~(OSC32KCTRL_OSCULP32K_EN32K | OSC32KCTRL_OSCULP32K_EN1K);
 
     /* deviation from adafruit/arduino: omitted debugging stuff */
 
