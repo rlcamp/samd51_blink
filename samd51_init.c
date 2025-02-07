@@ -435,8 +435,11 @@ static void switch_cpu_to_32kHz(void) {
     OSC32KCTRL->OSCULP32K.bit.EN32K = 1;
 
 #ifndef CRYSTALLESS
-    /* fail over to ULP32 if */
-    OSC32KCTRL->CFDCTRL.reg = (OSC32KCTRL_CFDCTRL_Type) { .bit.CFDEN = 1, .bit.SWBACK = 1 }.reg;
+    /* fail over to ulp if xosc doesn't start immediately, but switch back once it does */
+    if (!OSC32KCTRL->STATUS.bit.XOSC32KRDY)
+        OSC32KCTRL->CFDCTRL.reg = (OSC32KCTRL_CFDCTRL_Type) { .bit.CFDEN = 1, .bit.SWBACK = 1 }.reg;
+    else
+        OSC32KCTRL->CFDCTRL.reg = (OSC32KCTRL_CFDCTRL_Type) { .bit.CFDEN = 0 }.reg;
 
     /* enable 32 kHz xtal oscillator */
     OSC32KCTRL->XOSC32K.reg = (OSC32KCTRL_XOSC32K_Type) { .bit = {
@@ -445,6 +448,7 @@ static void switch_cpu_to_32kHz(void) {
         .XTALEN = 1, .STARTUP = 0x2
     }}.reg;
 
+    /* note we continue past this point regardless of whether the clock has failed over */
     while (!OSC32KCTRL->STATUS.bit.XOSC32KRDY);
 #endif
 
