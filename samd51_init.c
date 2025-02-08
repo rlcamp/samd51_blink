@@ -431,7 +431,7 @@ __attribute__((used, section(".isr_vector"))) const DeviceVectors exception_tabl
  and 1 MHz respectively, we don't, but we should probably not reuse those two GCLKs for
  other clock frequencies */
 
-static void switch_cpu_to_32kHz(void) {
+static void clock_init(void) {
     OSC32KCTRL->OSCULP32K.bit.EN32K = 1;
 
 #ifdef CRYSTALLESS
@@ -463,18 +463,14 @@ static void switch_cpu_to_32kHz(void) {
         .SRC = OSC32KCTRL->XOSC32K.bit.EN32K ? GCLK_GENCTRL_SRC_XOSC32K_Val : GCLK_GENCTRL_SRC_OSCULP32K_Val,
         .GENEN = 1 }
     }.reg;
-
     while (GCLK->SYNCBUSY.bit.GENCTRL3);
 
     /* temporarily use the ulp oscillator for generic clock 0 */
     GCLK->GENCTRL[0].reg = (GCLK_GENCTRL_Type) { .bit = { .SRC = GCLK_GENCTRL_SRC_OSCULP32K_Val, .GENEN = 1 }}.reg;
     while (GCLK->SYNCBUSY.reg & GCLK_SYNCBUSY_GENCTRL0);
-}
 
-static void switch_cpu_from_32kHz_to_fast(void) {
     /* one or the other of the 32 kHz oscillators, divided by 32, will be generic clock generator 6 */
     GCLK->GENCTRL[6].reg = (GCLK_GENCTRL_Type) { .bit = { .SRC = GCLK->GENCTRL[3].bit.SRC, .GENEN = 1, .DIV = 32U }}.reg;
-
     while (GCLK->SYNCBUSY.bit.GENCTRL6);
 
     /* set the reference clock for the DFLL to GCLK6 */
@@ -547,8 +543,7 @@ void SystemInit(void) {
     /* zero wait states */
     NVMCTRL->CTRLA.bit.RWS = 0;
 
-    switch_cpu_to_32kHz();
-    switch_cpu_from_32kHz_to_fast();
+    clock_init();
 
     /* use ldo regulator */
     SUPC->VREG.bit.SEL = 0;
