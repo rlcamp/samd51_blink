@@ -6,10 +6,8 @@
 #include <samd51/include/samd51.h>
 #endif
 
-/* assume itsybitsy m4 pinout if this is defined */
-#ifdef CRYSTALLESS
-#define PORT0_LED_PIN 22U
-#else
+#ifndef PORT0_LED_PIN
+/* for itsybitsy m4, define this to 22 */
 #define PORT0_LED_PIN 23U
 #endif
 
