@@ -431,36 +431,19 @@ __attribute__((used, section(".isr_vector"))) const DeviceVectors exception_tabl
  and 1 MHz respectively, we don't, but we should probably not reuse those two GCLKs for
  other clock frequencies */
 
-static void clock_init(void) {
-    OSC32KCTRL->OSCULP32K.bit.EN32K = 1;
+/* suppress compiler warning, since we want application code to be able to call this again */
+void clock_reinit(void);
 
-#ifdef CRYSTALLESS
-    OSC32KCTRL->XOSC32K.reg = 0;
-#else
-    /* fail over to ulp if xosc doesn't start immediately, but switch back once it does */
-    if (!OSC32KCTRL->STATUS.bit.XOSC32KRDY)
-        OSC32KCTRL->CFDCTRL.reg = (OSC32KCTRL_CFDCTRL_Type) { .bit.CFDEN = 1, .bit.SWBACK = 1 }.reg;
-    else
-        OSC32KCTRL->CFDCTRL.reg = (OSC32KCTRL_CFDCTRL_Type) { .bit.CFDEN = 0 }.reg;
+void clock_reinit(void) {
+    __disable_irq();
+   OSC32KCTRL->OSCULP32K.bit.EN32K = 1;
 
-    /* enable 32 kHz xtal oscillator */
-    OSC32KCTRL->XOSC32K.reg = (OSC32KCTRL_XOSC32K_Type) { .bit = {
-        .ENABLE = 1, .EN1K = 1, .EN32K = 1,
-        .CGM = OSC32KCTRL_XOSC32K_CGM_XT_Val,
-        .XTALEN = 1, .STARTUP = 0x2
-    }}.reg;
-
-    /* note we continue past this point regardless of whether the clock has failed over */
-    while (!OSC32KCTRL->STATUS.bit.XOSC32KRDY);
-#endif
-
-    /* reset gclk peripheral */
-    GCLK->CTRLA.bit.SWRST = 1;
-    while (GCLK->SYNCBUSY.bit.SWRST);
+    /* only use xosc32k if ready is the only status bit set (i.e. not switched or failed) */
+    const int use_xosc32k = OSC32KCTRL->STATUS.reg == (OSC32KCTRL_STATUS_Type) { .bit.XOSC32KRDY = 1 }.reg;
 
     /* one or the other of the 32 kHz oscillators will be generic clock generator 3 */
     GCLK->GENCTRL[3].reg = (GCLK_GENCTRL_Type) { .bit = {
-        .SRC = OSC32KCTRL->XOSC32K.bit.EN32K ? GCLK_GENCTRL_SRC_XOSC32K_Val : GCLK_GENCTRL_SRC_OSCULP32K_Val,
+        .SRC = use_xosc32k ? GCLK_GENCTRL_SRC_XOSC32K_Val : GCLK_GENCTRL_SRC_OSCULP32K_Val,
         .GENEN = 1 }
     }.reg;
     while (GCLK->SYNCBUSY.bit.GENCTRL3);
@@ -469,12 +452,14 @@ static void clock_init(void) {
     GCLK->GENCTRL[0].reg = (GCLK_GENCTRL_Type) { .bit = { .SRC = GCLK_GENCTRL_SRC_OSCULP32K_Val, .GENEN = 1 }}.reg;
     while (GCLK->SYNCBUSY.reg & GCLK_SYNCBUSY_GENCTRL0);
 
-    /* one or the other of the 32 kHz oscillators, divided by 32, will be generic clock generator 6 */
-    GCLK->GENCTRL[6].reg = (GCLK_GENCTRL_Type) { .bit = { .SRC = GCLK->GENCTRL[3].bit.SRC, .GENEN = 1, .DIV = 32U }}.reg;
-    while (GCLK->SYNCBUSY.bit.GENCTRL6);
+    if (use_xosc32k) {
+        /* the 32 kHz xtal oscillator, divided by 32, will be generic clock generator 6, providing a 1024 Hz reference */
+        GCLK->GENCTRL[6].reg = (GCLK_GENCTRL_Type) { .bit = { .SRC = GCLK_GENCTRL_SRC_XOSC32K_Val, .GENEN = 1, .DIV = 32U }}.reg;
+        while (GCLK->SYNCBUSY.bit.GENCTRL6);
 
-    /* set the reference clock for the DFLL to GCLK6 */
-    GCLK->PCHCTRL[OSCCTRL_GCLK_ID_DFLL48].reg = (GCLK_PCHCTRL_Type) { .bit = { .GEN = GCLK_PCHCTRL_GEN_GCLK6_Val, .CHEN = 1 }}.reg;
+        /* set the reference clock for the DFLL to GCLK6 */
+        GCLK->PCHCTRL[OSCCTRL_GCLK_ID_DFLL48].reg = (GCLK_PCHCTRL_Type) { .bit = { .GEN = GCLK_PCHCTRL_GEN_GCLK6_Val, .CHEN = 1 }}.reg;
+    }
 
     /* bring up dfll in open loop mode */
     OSCCTRL->DFLLCTRLA.reg = 0;
@@ -501,8 +486,8 @@ static void clock_init(void) {
     OSCCTRL->DFLLVAL.reg = OSCCTRL->DFLLVAL.reg;
     while (OSCCTRL->DFLLSYNC.bit.DFLLVAL);
 
-    /* closed loop mode */
-    OSCCTRL->DFLLCTRLB.reg = (OSCCTRL_DFLLCTRLB_Type) { .bit = { .WAITLOCK = 1, .CCDIS = 1, .MODE = 1 }}.reg;
+    /* only use 48 MHz DFLL in closed loop mode IF the 32 kHz xtal oscillator is enabled and ready */
+    OSCCTRL->DFLLCTRLB.reg = (OSCCTRL_DFLLCTRLB_Type) { .bit = { .WAITLOCK = 1, .CCDIS = 1, .MODE = use_xosc32k }}.reg;
     while (!OSCCTRL->STATUS.bit.DFLLRDY);
 
     if (48000000 == F_CPU)
@@ -537,13 +522,18 @@ static void clock_init(void) {
 
     /* with no divider */
     MCLK->CPUDIV.reg = MCLK_CPUDIV_DIV_DIV1;
+    __enable_irq();
 }
 
 void SystemInit(void) {
     /* zero wait states */
     NVMCTRL->CTRLA.bit.RWS = 0;
 
-    clock_init();
+    /* reset gclk peripheral */
+    GCLK->CTRLA.bit.SWRST = 1;
+    while (GCLK->SYNCBUSY.bit.SWRST);
+
+    clock_reinit();
 
     /* use ldo regulator */
     SUPC->VREG.bit.SEL = 0;
