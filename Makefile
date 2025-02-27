@@ -19,10 +19,11 @@ TARGET_ARCH?=-mcpu=cortex-m4 -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16
 
 CPPFLAGS?=-Wall -Wextra -Wshadow -Wmissing-prototypes -Wstack-usage=128
 
+# getting this vs j20 right is not actually relevant, the reset handler determines the initial stack pointer value from hw regs
 BOARD?=__SAMD51J19A__
 
 # specifying CPPFLAGS at the command line does not affect whether these are appended
-override CPPFLAGS+=-D__SAMD51__ -D${BOARD} -DUSB_VID=0x239A -DUSB_PID=0x8022
+override CPPFLAGS+=-D__SAMD51__ -D${BOARD} -DUSB_VID=0x03EB -DUSB_PID=0x8022
 override CPPFLAGS+=-DF_CPU=48000000UL
 override CPPFLAGS+=-I${PATH_CMSIS}/Core/Include/ -I${PATH_ATMEL}
 
