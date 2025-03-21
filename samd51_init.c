@@ -67,7 +67,8 @@ __attribute((naked)) void Reset_Handler(void) {
         "ldreq r0, =0x20040000\n" /* move the stack pointer to the top of 256k of sram */
         "ldrne r0, =0x20030000\n" /* move the stack pointer to the top of 192k of sram */
         "msr msp, r0\n"
-        "b Reset_Handler2\n" /* jump to C code for rest of reset handler */);
+        "b Reset_Handler2\n" /* jump to C code for rest of reset handler */
+        ".ltorg" /* force literal pool to be assembled now, so that ldrs are in range */);
 }
 
 /* default dummy handler, hangs forever if encountered */
