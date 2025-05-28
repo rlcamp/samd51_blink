@@ -1,6 +1,6 @@
 ifndef USE_ARDUINO
     PATH_CC:=$(shell find ${HOME} -maxdepth 2 -type d -name 'arm-gnu-toolchain*' 2>/dev/null | sort | tail -n1)/bin/
-# to use this, download generic arm-none-eabi-gcc, cmsis, cmsis-atmel, download and compile bossac
+# to use this, download generic arm-none-eabi-gcc, cmsis, cmsis-atmel, and uf2conv.py
     PATH_CMSIS:=$(shell find ${HOME} -maxdepth 2 -type d -name 'CMSIS_5' 2>/dev/null)/CMSIS/
     PATH_ATMEL:=$(shell find ${HOME} -maxdepth 2 -type d -name 'Atmel.SAMD51_DFP.*' 2>/dev/null | sort | tail -n1)/samd51a/include
 else

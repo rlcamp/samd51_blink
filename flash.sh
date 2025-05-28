@@ -1,7 +1,6 @@
 #!/bin/bash
 set -euo pipefail
 
-# if bossac is not in path, try to find it where arduino puts it
 if [ ! -x ${HOME}/Downloads/uf2/utils/uf2conv.py ]; then
     cd ~/Downloads/
     git clone --depth 1 https://github.com/microsoft/uf2.git
