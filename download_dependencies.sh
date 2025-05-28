@@ -25,7 +25,6 @@ if [ ! -d arm-gnu-toolchain-14.2.*-arm-none-eabi ]; then
     tar Jxf "$TOOLCHAIN_TARBALL"
 fi
 
-if [ ! -d BOSSA ]; then
-    git clone --depth 1 https://github.com/shumatech/BOSSA
-    make -C BOSSA bossac CXXFLAGS="-Wno-unqualified-std-cast-call" 2>&1 | grep -v found >&2
+if [ ! -d uf2 ]; then
+    git clone --depth 1 https://github.com/microsoft/uf2.git
 fi
