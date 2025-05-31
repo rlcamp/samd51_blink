@@ -7,7 +7,7 @@ if [ ! -x ${HOME}/Downloads/uf2/utils/uf2conv.py ]; then
     cd -
 fi
 
-if [ $# -lt 2 ]; then
+if [ $# -lt 1 ]; then
     printf "Usage: ./flash.sh file.bin\n"
     exit -1
 fi
