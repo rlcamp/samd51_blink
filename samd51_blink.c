@@ -66,9 +66,8 @@ int main(void) {
     led_init();
     timer_init();
     led_on();
-    unsigned wakes_acknowledged = 0;
 
-    while (1) {
+    for (unsigned ipass = 0;; ipass++) {
         /* sleep until next event (in this case the tc3 interrupt) */
         while (!TC3->COUNT16.INTFLAG.bit.MC0)
             __WFE();
@@ -77,10 +76,8 @@ int main(void) {
         TC3->COUNT16.INTFLAG.reg = (TC_INTFLAG_Type){ .bit.MC0 = 1 }.reg;
         NVIC_ClearPendingIRQ(TC3_IRQn);
 
-        wakes_acknowledged++;
-
         /* toggle the led */
-        if (wakes_acknowledged % 2) led_on();
+        if (ipass % 2) led_on();
         else led_off();
     }
 }
