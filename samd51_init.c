@@ -433,67 +433,85 @@ __attribute__((used, section(".isr_vector"))) const DeviceVectors exception_tabl
  other clock frequencies */
 
 /* suppress compiler warning, since we want application code to be able to call this again */
-void clock_reinit(void);
+void clock_reinit(unsigned long f_cpu_requested);
 
-void clock_reinit(void) {
+void clock_reinit(unsigned long f_cpu_requested) {
     __disable_irq();
-   OSC32KCTRL->OSCULP32K.bit.EN32K = 1;
 
-    /* temporarily use the ulp oscillator for generic clock 0 */
-    GCLK->GENCTRL[0].reg = (GCLK_GENCTRL_Type) { .bit = { .SRC = GCLK_GENCTRL_SRC_OSCULP32K_Val, .GENEN = 1 }}.reg;
-    while (GCLK->SYNCBUSY.reg & GCLK_SYNCBUSY_GENCTRL0);
+    if (!OSCCTRL->DFLLCTRLA.bit.ENABLE) {
+        /* bring up dfll in open loop mode */
+        OSCCTRL->DFLLCTRLA.reg = 0;
+        while (OSCCTRL->DFLLCTRLA.reg);
 
-    /* enable 32 kHz xtal oscillator with very conservative settings */
-    OSC32KCTRL->XOSC32K.reg = (OSC32KCTRL_XOSC32K_Type) { .bit = {
+        OSCCTRL->DFLLMUL.reg = (OSCCTRL_DFLLMUL_Type) { .bit = { .CSTEP = 1, .FSTEP = 1, .MUL = 0 }}.reg;
+        while (OSCCTRL->DFLLSYNC.bit.DFLLMUL);
+
+        OSCCTRL->DFLLCTRLB.reg = 0;
+        while (OSCCTRL->DFLLSYNC.bit.DFLLCTRLB);
+
+        OSCCTRL->DFLLCTRLA.bit.ENABLE = 1;
+        while (OSCCTRL->DFLLSYNC.bit.ENABLE);
+        while (!OSCCTRL->STATUS.bit.DFLLRDY);
+
+        /* chip errata 2.8.3 workaround says to set dfllmul, then clear ctrlb to select open loop, then
+         enable the dfll, then do this weird dfllval reload thing, then set dfllctrlb to final value */
+        OSCCTRL->DFLLVAL.reg = OSCCTRL->DFLLVAL.reg;
+        while (OSCCTRL->DFLLSYNC.bit.DFLLVAL);
+
+        /* use 48 MHz DFLL in open loop mode */
+        OSCCTRL->DFLLCTRLB.reg = (OSCCTRL_DFLLCTRLB_Type) { .bit = { .MODE = 0 }}.reg;
+        while (!OSCCTRL->STATUS.bit.DFLLRDY);
+    }
+
+    /* very conservative settings for 32 kHz xtal oscillator */
+    const OSC32KCTRL_XOSC32K_Type xosc32k_desired = { .bit = {
         .ENABLE = 1, .EN1K = 1, .EN32K = 1,
         .RUNSTDBY = 1,
         .CGM = OSC32KCTRL_XOSC32K_CGM_HS_Val,
         .XTALEN = 1, .STARTUP = 0x3
-    }}.reg;
+    }};
 
-    /* block until it starts oscillating */
-    while (!OSC32KCTRL->STATUS.bit.XOSC32KRDY);
-
-    /* one or the other of the 32 kHz oscillators will be generic clock generator 3 */
-    GCLK->GENCTRL[3].reg = (GCLK_GENCTRL_Type) { .bit = {
+    const GCLK_GENCTRL_Type genctrl3_desired = { .bit = {
         .SRC = GCLK_GENCTRL_SRC_XOSC32K_Val,
-        .GENEN = 1 }
-    }.reg;
-    while (GCLK->SYNCBUSY.bit.GENCTRL3);
+        .GENEN = 1
+    }};
 
-    /* bring up dfll in open loop mode */
-    OSCCTRL->DFLLCTRLA.reg = 0;
-    while (OSCCTRL->DFLLCTRLA.reg);
+    /* reconfigure xosc32k if not already configured the way we want it */
+    if (OSC32KCTRL->XOSC32K.reg != xosc32k_desired.reg ||
+        GCLK->GENCTRL[3].reg != genctrl3_desired.reg) {
+        OSC32KCTRL->OSCULP32K.bit.EN32K = 1;
 
-    OSCCTRL->DFLLMUL.reg = (OSCCTRL_DFLLMUL_Type) { .bit = { .CSTEP = 1, .FSTEP = 1, .MUL = 0 }}.reg;
-    while (OSCCTRL->DFLLSYNC.bit.DFLLMUL);
+        /* temporarily use the ulp oscillator for generic clock 0 while reconfiguring clock */
+        GCLK->GENCTRL[0].reg = (GCLK_GENCTRL_Type) { .bit = { .SRC = GCLK_GENCTRL_SRC_OSCULP32K_Val, .GENEN = 1 }}.reg;
+        while (GCLK->SYNCBUSY.bit.GENCTRL0);
 
-    OSCCTRL->DFLLCTRLB.reg = 0;
-    while (OSCCTRL->DFLLSYNC.bit.DFLLCTRLB);
+        /* enable 32 kHz xosc and block until it starts oscillating, which could be a full second */
+        OSC32KCTRL->XOSC32K.reg = xosc32k_desired.reg;
 
-    OSCCTRL->DFLLCTRLA.bit.ENABLE = 1;
-    while (OSCCTRL->DFLLSYNC.bit.ENABLE);
-    while (!OSCCTRL->STATUS.bit.DFLLRDY);
+        /* block until it starts oscillating */
+        while (!OSC32KCTRL->STATUS.bit.XOSC32KRDY);
 
-    /* chip errata 2.8.3 workaround says to set dfllmul, then clear ctrlb to select open loop, then
-     enable the dfll, then do this weird dfllval reload thing, then set dfllctrlb to final value */
-    OSCCTRL->DFLLVAL.reg = OSCCTRL->DFLLVAL.reg;
-    while (OSCCTRL->DFLLSYNC.bit.DFLLVAL);
+        GCLK->GENCTRL[3].reg = genctrl3_desired.reg;
+        while (GCLK->SYNCBUSY.bit.GENCTRL3);
 
-    /* use 48 MHz DFLL in open loop mode */
-    OSCCTRL->DFLLCTRLB.reg = (OSCCTRL_DFLLCTRLB_Type) { .bit = { .MODE = 0 }}.reg;
-    while (!OSCCTRL->STATUS.bit.DFLLRDY);
+        /* shut the ulp back off */
+        OSC32KCTRL->OSCULP32K.bit.EN32K = 0;
+    }
 
-    if (48000000 == F_CPU)
     /* use the 48 MHz clock for the cpu */
-        GCLK->GENCTRL[0].reg = (GCLK_GENCTRL_Type) { .bit = { .SRC = GCLK_GENCTRL_SRC_DFLL_Val, .GENEN = 1 }}.reg;
-    else {
-        /* set up fdpll0 at F_CPU, using 32768 Hz oscillator as reference  */
+    GCLK->GENCTRL[0].reg = (GCLK_GENCTRL_Type) { .bit = { .SRC = GCLK_GENCTRL_SRC_DFLL_Val, .GENEN = 1 }}.reg;
+    while (GCLK->SYNCBUSY.bit.GENCTRL0);
+
+    /* shut off PLL if it is on */
+    OSCCTRL->Dpll[0].DPLLCTRLA.reg = (OSCCTRL_DPLLCTRLA_Type) { .bit.ENABLE = 0 }.reg;
+
+    if (f_cpu_requested != 48000000) {
+        /* set up fdpll0 at requested freq, using 32768 Hz oscillator as reference  */
         GCLK->PCHCTRL[OSCCTRL_GCLK_ID_FDPLL0].reg = (GCLK_PCHCTRL_Type) { .bit = { .GEN = GCLK_PCHCTRL_GEN_GCLK3_Val, .CHEN = 1 }}.reg;
 
         OSCCTRL->Dpll[0].DPLLRATIO.reg = (OSCCTRL_DPLLRATIO_Type) { .bit = {
-            .LDRFRAC = ((F_CPU % 32768U) * 32U) / 32768U,
-            .LDR = (F_CPU / 32768U) - 1
+            .LDRFRAC = ((f_cpu_requested % 32768U) * 32U) / 32768U,
+            .LDR = (f_cpu_requested / 32768U) - 1
         }}.reg;
 
         while (OSCCTRL->Dpll[0].DPLLSYNCBUSY.bit.DPLLRATIO);
@@ -506,20 +524,17 @@ void clock_reinit(void) {
         OSCCTRL->Dpll[0].DPLLCTRLA.reg = (OSCCTRL_DPLLCTRLA_Type) { .bit.ENABLE = 1 }.reg;
         while (OSCCTRL->Dpll[0].DPLLSTATUS.bit.CLKRDY == 0 || OSCCTRL->Dpll[0].DPLLSTATUS.bit.LOCK == 0);
 
-        /* 48 MHz clock, required for usb and many other things */
-        if (96000000 == F_CPU) {
-            GCLK->GENCTRL[1].reg = (GCLK_GENCTRL_Type) { .bit = { .SRC = GCLK_GENCTRL_SRC_DPLL0_Val, .GENEN = 1, .DIV = 2U }}.reg;
-            OSCCTRL->DFLLCTRLA.bit.ENABLE = 0;
-        }
-        else
-            GCLK->GENCTRL[1].reg = (GCLK_GENCTRL_Type) { .bit = { .SRC = GCLK_GENCTRL_SRC_DFLL_Val, .GENEN = 1 }}.reg;
+        /* enable ondemand bit in DFLL so that it shuts off in standby when nobody needs it */
+        OSCCTRL->DFLLCTRLA.bit.ONDEMAND = 1;
+
+        /* use GCLK1 as 48ish MHz from DFLL until something switches it */
+        GCLK->GENCTRL[1].reg = (GCLK_GENCTRL_Type) { .bit = { .SRC = GCLK_GENCTRL_SRC_DFLL_Val, .GENEN = 1 }}.reg;
         while (GCLK->SYNCBUSY.reg & GCLK_SYNCBUSY_GENCTRL1);
 
-        /* use the 120 MHz clock for the cpu */
+        /* use the FDPLL for the cpu */
         GCLK->GENCTRL[0].reg = (GCLK_GENCTRL_Type) { .bit = { .SRC = GCLK_GENCTRL_SRC_DPLL0_Val, .GENEN = 1 }}.reg;
+        while (GCLK->SYNCBUSY.bit.GENCTRL0);
     }
-
-    while (GCLK->SYNCBUSY.reg & GCLK_SYNCBUSY_GENCTRL0);
 
     /* with no divider */
     MCLK->CPUDIV.reg = MCLK_CPUDIV_DIV_DIV1;
@@ -534,7 +549,7 @@ void SystemInit(void) {
     GCLK->CTRLA.bit.SWRST = 1;
     while (GCLK->SYNCBUSY.bit.SWRST);
 
-    clock_reinit();
+    clock_reinit(F_CPU);
 
     /* use ldo regulator */
     SUPC->VREG.bit.SEL = 0;
