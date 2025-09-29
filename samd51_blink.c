@@ -63,14 +63,6 @@ int main(void) {
 
     PM->SLEEPCFG.bit.SLEEPMODE = PM_SLEEPCFG_SLEEPMODE_STANDBY_Val;
 
-    /* make sure BOD33 continues to run in standby */
-    SUPC->BOD33.bit.ENABLE = 0;
-    while (!SUPC->STATUS.bit.B33SRDY);
-    SUPC->BOD33.bit.RUNSTDBY = 1;
-    while (!SUPC->STATUS.bit.B33SRDY);
-    SUPC->BOD33.bit.ENABLE = 1;
-    while (!SUPC->STATUS.bit.BOD33RDY);
-
     led_init();
     timer_init();
     led_on();

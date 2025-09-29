@@ -549,6 +549,25 @@ void SystemInit(void) {
     GCLK->CTRLA.bit.SWRST = 1;
     while (GCLK->SYNCBUSY.bit.SWRST);
 
+    /* check BOD33 configuration and fix it up if necessary */
+    const SUPC_BOD33_Type bod33_prior = SUPC->BOD33;
+    if (!bod33_prior.bit.ENABLE ||
+        !bod33_prior.bit.RUNSTDBY ||
+        bod33_prior.bit.LEVEL != 200 ||
+        bod33_prior.bit.ACTION != SUPC_BOD33_ACTION_RESET_Val) {
+
+        SUPC->BOD33.bit.ENABLE = 0;
+        while (!SUPC->STATUS.bit.B33SRDY);
+
+        SUPC->BOD33.bit.RUNSTDBY = 1;
+        SUPC->BOD33.bit.ACTION = SUPC_BOD33_ACTION_RESET_Val;
+        SUPC->BOD33.bit.LEVEL = 200; /* 2.7 volts */
+        while (!SUPC->STATUS.bit.B33SRDY);
+
+        SUPC->BOD33.bit.ENABLE = 1;
+        while (!SUPC->STATUS.bit.BOD33RDY);
+    }
+
     clock_reinit(F_CPU);
 
     /* use ldo regulator */
